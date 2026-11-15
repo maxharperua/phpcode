@@ -13,22 +13,20 @@ fs.mkdirSync(output, { recursive: true });
 const version = JSON.parse(fs.readFileSync(path.join(upstream, 'package.json'))).version;
 const name = `phpcode-${version}-${target}`;
 
-function copyMatching(root, suffix) {
+function copyMatching(root, suffix, destinationName) {
 	let count = 0;
 	for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
 		const file = path.join(root, entry.name);
-		if (entry.isDirectory()) { count += copyMatching(file, suffix); }
-		else if (entry.name.endsWith(suffix)) { fs.copyFileSync(file, path.join(output, entry.name)); count++; }
+		if (entry.isDirectory()) { count += copyMatching(file, suffix, destinationName); }
+		else if (entry.name.endsWith(suffix)) { fs.copyFileSync(file, path.join(output, destinationName || entry.name)); count++; }
 	}
 	return count;
 }
 
 if (process.platform === 'win32') {
+	pnpm(['run', 'gulp', `vscode-${target}-inno-updater`], upstream);
 	pnpm(['run', 'gulp', `vscode-${target}-user-setup`], upstream);
-	if (!copyMatching(path.join(upstream, '.build', `win32-${process.arch}`, 'user-setup'), '.exe')) { throw new Error('Windows installer was not produced.'); }
-	const installers = fs.readdirSync(output).filter(file => file.endsWith('.exe'));
-	if (installers.length !== 1) { throw new Error('Expected one Windows user installer.'); }
-	fs.renameSync(path.join(output, installers[0]), path.join(output, `${name}-user-setup.exe`));
+	if (copyMatching(path.join(upstream, '.build', `win32-${process.arch}`, 'user-setup'), '.exe', `${name}-user-setup.exe`) !== 1) { throw new Error('Expected one Windows user installer.'); }
 	// A script file and arguments avoid interpolating paths into PowerShell source.
 	run('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', path.join(repo, 'scripts/zip.ps1'), '-Source', directory, '-Destination', path.join(output, `${name}.zip`)]);
 } else if (process.platform === 'linux') {
