@@ -1,0 +1,170 @@
+{
+	"name": "database",
+	"displayName": "phpcode Database",
+	"description": "Integrated database connections, table editor and SQL results for phpcode.",
+	"publisher": "phpcode",
+	"version": "0.1.0",
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.146.0"
+	},
+	"main": "./extension.cjs",
+	"extensionKind": [
+		"workspace"
+	],
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": false
+		},
+		"virtualWorkspaces": false
+	},
+	"contributes": {
+		"commands": [
+			{
+				"command": "phpcode.database.add",
+				"title": "%label0%",
+				"icon": "$(add)"
+			},
+			{
+				"command": "phpcode.database.edit",
+				"title": "%label1%",
+				"icon": "$(edit)"
+			},
+			{
+				"command": "phpcode.database.remove",
+				"title": "%label2%",
+				"icon": "$(trash)"
+			},
+			{
+				"command": "phpcode.database.refresh",
+				"title": "%label3%",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "phpcode.database.query",
+				"title": "%label4%",
+				"icon": "$(new-file)"
+			},
+			{
+				"command": "phpcode.database.run",
+				"title": "%label5%",
+				"icon": "$(play)"
+			},
+			{
+				"command": "phpcode.database.connection",
+				"title": "%label6%"
+			},
+			{
+				"command": "phpcode.database.cancel",
+				"title": "%label7%",
+				"icon": "$(debug-stop)"
+			},
+			{
+				"command": "phpcode.database.table",
+				"title": "%label8%"
+			},
+			{
+				"command": "phpcode.database.open",
+				"title": "%openDatabase%",
+				"icon": "$(database)"
+			},
+			{
+				"command": "phpcode.database.importEnv",
+				"title": "%importEnv%",
+				"icon": "$(file-code)"
+			}
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "phpcode-database",
+					"title": "%label9%",
+					"icon": "media/database.svg"
+				}
+			],
+			"panel": [
+				{
+					"id": "phpcode-database-results",
+					"title": "%label10%",
+					"icon": "media/database.svg"
+				}
+			]
+		},
+		"views": {
+			"phpcode-database": [
+				{
+					"id": "phpcode.database.connections",
+					"name": "%label11%"
+				}
+			],
+			"phpcode-database-results": [
+				{
+					"id": "phpcode.database.results",
+					"name": "%label12%",
+					"type": "webview"
+				}
+			]
+		},
+		"viewsWelcome": [
+			{
+				"view": "phpcode.database.connections",
+				"contents": "%label13%"
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "phpcode.database.add",
+					"when": "view == phpcode.database.connections",
+					"group": "navigation"
+				},
+				{
+					"command": "phpcode.database.refresh",
+					"when": "view == phpcode.database.connections",
+					"group": "navigation"
+				},
+				{
+					"command": "phpcode.database.importEnv",
+					"when": "view == phpcode.database.connections",
+					"group": "navigation"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "phpcode.database.query",
+					"when": "view == phpcode.database.connections && viewItem == databaseConnection",
+					"group": "inline"
+				},
+				{
+					"command": "phpcode.database.edit",
+					"when": "view == phpcode.database.connections && viewItem == databaseConnection",
+					"group": "connections"
+				},
+				{
+					"command": "phpcode.database.remove",
+					"when": "view == phpcode.database.connections && viewItem == databaseConnection",
+					"group": "connections"
+				}
+			],
+			"editor/title": [
+				{
+					"command": "phpcode.database.run",
+					"when": "editorLangId == sql",
+					"group": "navigation"
+				}
+			]
+		},
+		"keybindings": [
+			{
+				"command": "phpcode.database.run",
+				"key": "ctrl+enter",
+				"mac": "cmd+enter",
+				"when": "editorTextFocus && editorLangId == sql"
+			}
+		]
+	},
+	"l10n": "./l10n"
+}

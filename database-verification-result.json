@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "checks": [
+    "project .env automatically creates a working connection with its password held separately",
+    "explicit dotenv import updates the same profile without creating duplicates",
+    "two connections are tested and saved through the built-in UI",
+    "table data and schema open; UI updates and inserts reach the real database",
+    "compact icon toolbar leaves more than 85 percent of the editor height for the table",
+    "column sorting and search query all database rows, preserve paging and allow safe edits under a filter",
+    "native SQL file runs against selected PostgreSQL connection and renders multiple safe result sets",
+    "saved profile storage does not contain the plaintext database password",
+    "editing a connection preserves its existing secret without exposing the password in the form",
+    "multiple saved connection profiles and secret-backed authentication survive application restart"
+  ],
+  "fixture": "/private/tmp/phpcode-database-epszcZ",
+  "liveDatabases": [
+    "MariaDB 10.5.8",
+    "PostgreSQL 17"
+  ],
+  "build": "r11"
+}

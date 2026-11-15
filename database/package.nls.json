@@ -1,0 +1,18 @@
+{
+	"label0": "phpcode: Добавить Подключение к БД",
+	"label1": "Изменить Подключение",
+	"label2": "Удалить Подключение",
+	"label3": "Обновить Базы Данных",
+	"label4": "phpcode: Новый SQL-скрипт",
+	"label5": "phpcode: Выполнить SQL-скрипт или Выделение",
+	"label6": "phpcode: Выбрать Подключение для SQL",
+	"label7": "phpcode: Остановить SQL",
+	"label8": "Открыть Таблицу",
+	"label9": "Базы данных",
+	"label10": "Результаты SQL",
+	"label11": "Подключения",
+	"label12": "Результаты SQL",
+	"label13": "Сохраните подключения к MySQL, MariaDB и PostgreSQL.\n[Добавить подключение](command:phpcode.database.add)\n[Импортировать из .env](command:phpcode.database.importEnv)",
+	"openDatabase": "phpcode: Открыть Базы Данных",
+	"importEnv": "phpcode: Импортировать Подключение из .env"
+}

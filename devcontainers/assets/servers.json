@@ -1,0 +1,14 @@
+{
+  "linux-arm64": {
+    "file": "phpcode-server-linux-arm64.tar.gz",
+    "sha256": "f4ba255284992e02a6d5a1f513067f78b94a5c0c69cf7c80d1313ec5b519da4f",
+    "commit": "69047191fc427f2f92828279aae1d90d8eeda7ab",
+    "version": "1.146.0"
+  },
+  "linux-x64": {
+    "file": "phpcode-server-linux-x64.tar.gz",
+    "sha256": "85ede86e2096ee94c49558ede51f50912844dcc478b9bb3d96bf15b0a4481b57",
+    "commit": "69047191fc427f2f92828279aae1d90d8eeda7ab",
+    "version": "1.146.0"
+  }
+}

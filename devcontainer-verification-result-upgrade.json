@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "checks": [
+    "previous release leaves its remote server running before upgrading the same saved connection",
+    "project configuration produces a dismissible Dev Container startup offer",
+    "persistent status-bar button reopens a dismissed project in a real remote container workspace",
+    "pre-existing Compose container without Dev Container labels opens using the nested project configuration",
+    "agent execution mode survives the release upgrade",
+    "upgraded existing connection loads new remote database commands instead of reusing the old server socket",
+    "devcontainer editor customizations apply to the actual remote settings file",
+    "agent reads and edits container-only files and runs Linux commands with remoteEnv and container cwd",
+    "project index retrieves container code and excludes server internals and connection credentials",
+    "plain file paths and Markdown references open container files at the requested line",
+    "directory references reveal the folder in Explorer",
+    "project reopens locally with its container chat history retained"
+  ],
+  "fixture": "/private/tmp/phpcode-container-PWkZkL",
+  "architecture": "x86_64",
+  "configuration": "existing-compose",
+  "configFile": ".devcontainer/php/devcontainer.json",
+  "containerId": "131bd14b25b998eb838e072077c806448ca197836277ec408b1a7750229ba7a6",
+  "cleanup": {
+    "driverTimedOut": false,
+    "forcedKill": false,
+    "mainExitCode": 0
+  },
+  "liveProviderTest": false,
+  "build": "r9"
+}

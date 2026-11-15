@@ -1,0 +1,98 @@
+.phpcode-agent { display:flex; flex-direction:column; height:100%; min-width:240px; color:var(--vscode-foreground); font-size:13px; }
+.phpcode-agent [hidden] { display:none !important; }
+.phpcode-agent-toolbar,.phpcode-agent-controls { display:flex; align-items:center; gap:4px; padding:8px; }
+.phpcode-agent-toolbar { padding:4px 8px; }
+.phpcode-agent-tabs { flex:1; display:flex; overflow-x:auto; scrollbar-width:thin; gap:4px; }
+.phpcode-agent-tab { display:flex; align-items:center; border-bottom:1px solid transparent; min-width:80px; max-width:200px; }
+.phpcode-agent-tab.active { border-color:var(--vscode-focusBorder); background:var(--vscode-tab-activeBackground); }
+.phpcode-agent-tab > button:first-child { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.phpcode-agent-button { border:0; background:transparent; color:var(--vscode-foreground); cursor:pointer; border-radius:var(--vscode-cornerRadius-small,4px); padding:6px 8px; font:inherit; white-space:nowrap; }
+.phpcode-agent-button:hover { background:var(--vscode-toolbar-hoverBackground); }
+.phpcode-agent-button:focus-visible,.phpcode-agent textarea:focus-visible,.phpcode-agent input:focus-visible,.phpcode-agent select:focus-visible { outline:1px solid var(--vscode-focusBorder); outline-offset:-1px; }
+.phpcode-agent-button:disabled { opacity:.5; cursor:default; }
+.phpcode-agent-transcript { flex:1; min-height:80px; overflow:auto; padding:12px 16px; overscroll-behavior:contain; }
+.phpcode-agent-empty { display:flex; flex-direction:column; align-items:flex-start; gap:8px; max-width:440px; margin:32px auto; }
+.phpcode-agent-empty h2 { font-size:18px; font-weight:600; margin:0; }
+.phpcode-agent-empty p { color:var(--vscode-descriptionForeground); line-height:1.6; margin:0 0 16px; }
+.phpcode-agent-mark { font-size:32px; color:var(--vscode-textLink-foreground); }
+.phpcode-agent-entry { margin:0 0 20px; line-height:1.6; overflow-wrap:anywhere; }
+.phpcode-agent-entry.user { padding:12px; border:1px solid var(--vscode-widget-border); border-radius:var(--vscode-cornerRadius-medium,8px); background:var(--vscode-input-background); white-space:pre-wrap; }
+.phpcode-agent-entry.error { color:var(--vscode-errorForeground); }
+.phpcode-agent-entry.tool { font-size:12px; color:var(--vscode-descriptionForeground); margin-bottom:12px; }
+.phpcode-agent-entry summary { cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.phpcode-agent pre { font-family:var(--monaco-monospace-font); font-size:12px; overflow:auto; background:var(--vscode-textCodeBlock-background); padding:8px; border-radius:var(--vscode-cornerRadius-small,4px); white-space:pre-wrap; }
+.phpcode-agent code { font-family:var(--monaco-monospace-font); }
+.phpcode-agent p { margin:0 0 12px; }
+.phpcode-agent-changes { max-height:160px; overflow:auto; margin:0 12px; }
+.phpcode-agent-change { display:flex; align-items:center; flex-wrap:wrap; gap:4px; padding:8px 0; border-top:1px solid var(--vscode-widget-border); }
+.phpcode-agent-change > span { flex:1; min-width:100px; overflow:hidden; text-overflow:ellipsis; }
+.phpcode-agent .apply-change,.phpcode-agent .approve-command,.phpcode-agent .send { color:var(--vscode-button-foreground); background:var(--vscode-button-background); }
+.phpcode-agent .apply-change:hover,.phpcode-agent .send:hover { background:var(--vscode-button-hoverBackground); }
+.phpcode-agent-composer { border:1px solid var(--vscode-input-border,var(--vscode-widget-border)); border-radius:var(--vscode-cornerRadius-medium,8px); margin:12px; background:var(--vscode-input-background); }
+.phpcode-agent textarea { border:0; background:transparent; color:var(--vscode-input-foreground); width:100%; box-sizing:border-box; resize:vertical; min-height:72px; max-height:240px; font:inherit; padding:12px; line-height:1.5; }
+.phpcode-agent-controls { flex-wrap:wrap; }
+.phpcode-agent select { color:var(--vscode-dropdown-foreground); background:var(--vscode-dropdown-background); border:0; font:inherit; padding:6px; border-radius:var(--vscode-cornerRadius-small,4px); }
+.phpcode-agent .model-picker { max-width:200px; overflow:hidden; text-overflow:ellipsis; color:var(--vscode-descriptionForeground); }
+.phpcode-agent .send { margin-left:auto; }
+.phpcode-agent-contexts { display:flex; flex-wrap:wrap; padding:4px 8px 0; }
+.phpcode-agent-contexts:empty { display:none; }
+.phpcode-agent-contexts button { font-size:12px; color:var(--vscode-textLink-foreground); }
+.phpcode-agent-status { color:var(--vscode-descriptionForeground); font-size:11px; padding:4px 12px 8px; min-height:16px; }
+.phpcode-agent-settings,.phpcode-agent-history,.phpcode-agent-approval { margin:8px 12px; padding:12px; background:var(--vscode-editorWidget-background); border:1px solid var(--vscode-widget-border); border-radius:var(--vscode-cornerRadius-medium,8px); }
+.phpcode-agent-settings p { margin-top:8px; color:var(--vscode-descriptionForeground); font-size:12px; line-height:1.5; }
+.phpcode-agent input { box-sizing:border-box; width:100%; background:var(--vscode-input-background); border:1px solid var(--vscode-input-border,transparent); color:var(--vscode-input-foreground); padding:8px; font:inherit; margin:8px 0; }
+.phpcode-agent-history { max-height:280px; overflow:auto; }
+.phpcode-agent-history-item { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.phpcode-agent-history-item button { overflow:hidden; text-overflow:ellipsis; }
+.phpcode-agent small { color:var(--vscode-descriptionForeground); font-size:11px; }
+.phpcode-agent-approval { border-color:var(--vscode-editorWarning-foreground); }
+@media (prefers-reduced-motion:no-preference) { .phpcode-agent-transcript { scroll-behavior:smooth; } }
+
+.phpcode-agent-cache { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.phpcode-agent input[type=checkbox] { width:auto; margin:0; }
+.phpcode-agent-usage { color:var(--vscode-descriptionForeground); font-size:11px; padding:0 12px 8px; line-height:1.5; }
+
+.phpcode-agent-index-details { margin:8px 12px; padding:12px; border:1px solid var(--vscode-widget-border); background:var(--vscode-editorWidget-background); border-radius:var(--vscode-cornerRadius-medium,8px); font-size:12px; line-height:1.5; }
+.phpcode-agent-index-details strong { display:block; margin-bottom:8px; }
+.phpcode-agent .index-status { font-size:11px; color:var(--vscode-descriptionForeground); margin:0 4px 4px; }
+/* Compact composer and disclosure surfaces follow the editor theme. */
+.phpcode-agent-composer { margin:0 12px 4px; border-radius:var(--vscode-cornerRadius-medium,8px); flex-shrink:0; }
+.phpcode-agent textarea { min-height:64px; max-height:200px; resize:none; }
+.phpcode-agent-controls { flex-wrap:nowrap; padding:4px 8px 8px; gap:4px; }
+.phpcode-agent .phpcode-agent-mode { width:76px; flex-shrink:0; border-radius:16px; padding:4px 8px; }
+.phpcode-agent .model-picker { flex:1; min-width:32px; max-width:none; padding:4px; text-align:left; }
+.phpcode-agent .phpcode-agent-apply-mode { flex:0 0 68px; width:68px; font-size:11px; padding:4px; }
+.phpcode-agent .add-context,.phpcode-agent .send { display:flex; align-items:center; justify-content:center; flex:0 0 28px; height:28px; padding:4px; margin:0; }
+.phpcode-agent .codicon { font-size:16px; }
+.phpcode-agent .send { border-radius:50%; }
+.phpcode-agent-status { font-size:10px; min-height:12px; padding:0 12px 6px; }
+.phpcode-agent-metadata { display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:0 12px 8px; flex-shrink:0; color:var(--vscode-descriptionForeground); }
+.phpcode-agent-metadata .phpcode-agent-button { font-size:10px; padding:2px 4px; margin:0; }
+.phpcode-agent-usage-details { font-size:10px; }
+.phpcode-agent-usage-details summary { cursor:pointer; }
+.phpcode-agent-usage { padding:4px; max-width:400px; }
+.phpcode-agent-changes { margin:0 20px -1px; max-height:200px; flex-shrink:0; background:var(--vscode-editorWidget-background); border:1px solid var(--vscode-widget-border); border-radius:8px 8px 0 0; }
+.phpcode-agent-change-fold > summary { display:flex; align-items:center; gap:8px; padding:4px 8px; cursor:pointer; list-style:none; color:var(--vscode-descriptionForeground); }
+.phpcode-agent-change-fold > summary::before { content:'›'; display:inline-block; }
+.phpcode-agent-change-fold[open] > summary::before { transform:rotate(90deg); }
+.phpcode-agent-change-fold > summary span { flex:1; }
+.phpcode-agent-change-fold > summary .review-changes { margin-left:auto; padding:4px 8px; background:var(--vscode-toolbar-hoverBackground); }
+.phpcode-agent-change { margin:0 8px; padding:4px 0; font-size:12px; }
+.phpcode-agent-change .phpcode-agent-button { padding:4px; font-size:11px; }
+.phpcode-agent-processes { color:var(--vscode-descriptionForeground); margin:0 0 16px; font-size:12px; }
+.phpcode-agent-processes > summary { cursor:pointer; padding:4px 0; }
+.phpcode-agent-processes > .phpcode-agent-entry { margin:4px 0 4px 12px; }
+.phpcode-agent-processes .assistant { font-size:12px; }
+.phpcode-agent-composer.drop-target { outline:2px solid var(--vscode-focusBorder); background:var(--vscode-list-dropBackground); }
+
+.phpcode-agent .phpcode-agent-mode { width:116px; font-size:11px; }
+
+.phpcode-agent-status:empty { display:none; }
+.phpcode-agent-changes { border-color:var(--vscode-input-border,var(--vscode-panel-border)); }
+.phpcode-agent-changes { border:1px solid var(--vscode-input-border,var(--vscode-panel-border,var(--vscode-editorGroup-border))); }
+.phpcode-agent-change > span { min-width:0; }
+
+.phpcode-agent .phpcode-agent-mode { flex:0 1 148px; width:148px; min-width:80px; max-width:45%; text-overflow:ellipsis; }
+
+.phpcode-agent-file-link { color:var(--vscode-textLink-foreground); cursor:pointer; text-decoration:none; }
+.phpcode-agent-file-link:hover { text-decoration:underline; }

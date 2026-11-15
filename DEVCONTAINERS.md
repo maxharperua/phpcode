@@ -1,0 +1,46 @@
+# Dev Container в phpcode
+
+При открытии доверенного локального проекта встроенный компонент обнаруживает `.devcontainer/devcontainer.json`, `.devcontainer.json` и именованные конфигурации `.devcontainer/*/devcontainer.json`. Уведомление предлагает открыть проект внутри контейнера. После закрытия уведомления остаются отдельная кнопка **Dev Container** в строке состояния и команда `phpcode: Открыть в Dev Container`. При нескольких конфигурациях предлагается выбор. Из контейнера можно вернуться через кнопку в строке состояния или команду `phpcode: Открыть Проект Локально`.
+
+Это удалённый workspace Code OSS с `vscode-remote` URI, удалёнными файловым сервисом, extension host, поиском и PTY. Локальная папка не подменяется виртуальным файловым провайдером. Контейнер поднимает закреплённый Dev Containers CLI 0.88.0; image, Dockerfile, Docker Compose, features и lifecycle-команды обрабатывает CLI. Для последующих команд используется ID контейнера из результата `up`, поэтому поддерживается и уже запущенный Compose-сервис без меток `devcontainer.*`. Сервер phpcode запускается с настроенными `remoteUser` и `remoteEnv`. Настройки и расширения из объединённых `customizations.vscode` применяются к удалённой среде; JSONC-комментарии и посторонние пользовательские настройки сохраняются, параллельные изменения файла не перезаписываются; каталог расширений — Open VSX. Ошибка установки дополнительного расширения не блокирует открытие workspace: показывается предупреждение, подробности остаются в журнале; исключённый провайдер не устанавливается из конфигурации.
+
+Агент использует сервисы текущего workspace: читает и меняет удалённые файлы, индексирует содержимое контейнера и выполняет команды через удалённый PTY. ОС shell определяется по удалённому серверу. При потере связи нет перехода к исполнению на хосте. BotHub transport и защищённое хранилище API-ключа остаются на desktop. При переключении локально ↔ контейнер чаты, черновик, выбранная модель и режим переносятся через собственный API сервиса агента; более свежая версия существующего чата сохраняется. Активный запрос останавливается при смене среды.
+
+Встроенный компонент — собственный модуль продукта (`phpcode.devcontainers`), поставляемый вместе с приложением. Он не устанавливает расширение Microsoft Remote Containers и не загружает проприетарный VS Code Server. Собственный сервер собран из того же исходного коммита Code OSS 1.146.0 (`69047191fc427f2f92828279aae1d90d8eeda7ab`) с Node 24.22.1 и Linux-зависимостями. Контрольная сумма архива проверяется до загрузки в контейнер. Соединение идёт через `docker exec` и Unix-сокет; сервер не публикует TCP-порт. Токен соединения хранится в SecretStorage и в файле контейнера с закрытыми правами.
+
+Сейчас поставляются Linux glibc-серверы ARM64 и amd64, проверенные на Debian 12. Alpine/musl и Windows-контейнеры пока не поддержаны. Автоматическая обработка `forwardPorts` и полный паритет всех специфичных настроек расширения Microsoft в этом этапе не заявляются. Обычные Docker/Compose port mappings остаются частью конфигурации контейнера. Docker должен быть установлен и доступен; отсутствие daemon или неподдерживаемая среда показываются как ошибка без открытия локального проекта под видом контейнерного.
+
+## Сборка
+
+`apply-devcontainers.cjs` копирует исходники встроенного компонента, CLI с лицензиями и архивы из `devcontainers/assets`, разрешает API remote resolver и исключает неиспользуемую команду сертификатов прежнего провайдера из server entrypoint. Повторное применение не меняет результат. `package-container-server.cjs` собирает архив для каждой архитектуры и обновляет SHA-256 manifest; SDK и расширение Copilot в сервер не включаются.
+
+Нативные зависимости собираются отдельно от macOS `node_modules`, с исходными `remote/package.json`, lockfile и pnpm hooks. `build-container-dependencies.cjs linux-arm64` и `linux-x64` используют одноразовые Docker-контейнеры `node:24.22.1-bookworm`, закреплённый pnpm и `--frozen-lockfile`. Для упаковки нужны проверенные официальными SHASUMS Linux Node runtime в `tools/phpcode-build/node-v24.22.1-linux-{arm64,x64}`.
+
+```sh
+./run.sh node build/next/index.ts bundle --nls --target server --out out-phpcode-server
+node build-container-dependencies.cjs linux-arm64
+node build-container-dependencies.cjs linux-x64
+node package-container-server.cjs linux-arm64
+node package-container-server.cjs linux-x64
+node apply-devcontainers.cjs ../phpcode-oss
+node apply-agent.cjs ../phpcode-oss
+./run.sh pnpm run build-fast --client-only
+./run.sh pnpm run gulp vscode-darwin-arm64
+```
+
+Для нового checkout сначала применяются product/UI/build/removal/provider overlays и `apply-devcontainers.cjs`, затем собирается server bundle: optional provider certificate import должен быть исключён до bundling.
+
+## Проверка
+
+`verify-devcontainers.cjs` создаёт отдельный профиль и тестовый Dev Container. Workspace внутри `/home/node` отличается от локального source mount, поэтому проверка записи не может случайно пройти через локальный файл. Проверяются предложение при старте, запуск кнопкой после отклонения предложения, удалённый editor workspace, чтение/запись агентом, Linux shell, рабочая папка, `remoteEnv`, настройки контейнера, ссылки на файлы/строки/папки и перенос чата обратно в локальную среду. BotHub отвечает тестовый HTTP transport, реальные Docker/PTY/файловые операции выполняются без имитации.
+
+Регрессия r7: при `PHPCODE_CONTAINER_TEST_COMPOSE=1 PHPCODE_CONTAINER_TEST_EXISTING_COMPOSE=1` тест сначала запускает Compose-сервис вне Dev Containers, проверяет отсутствие меток Dev Container, затем открывает его по вложенной конфигурации `.devcontainer/php/devcontainer.json` и выполняет полный сценарий удалённого агента. До исправления этот сценарий воспроизводил `Dev container not found`; после исправления проходит без пересоздания контейнера.
+
+```sh
+./run.sh node ../phpcode-product/verify-devcontainers.cjs
+PHPCODE_CONTAINER_TEST_IMAGE=node:24.22.1-bookworm ./run.sh node ../phpcode-product/verify-devcontainers.cjs
+```
+
+Первый прогон использует локальную тестовую метку `phpcode-test-node:arm64` для ARM64-образа Node. Результаты и снимок интерфейса сохраняются в `devcontainer-verification-result-*.json` и `release/phpcode-devcontainer-preview.png`.
+
+Исправление r9: сокет, файл токена и журнал запуска включают идентификатор версии сервера (префикс SHA-256 архива). Старый процесс на сокете прежнего формата больше не удовлетворяет проверке готовности новой сборки. Сохранённые подключения с прежним адресом мигрируют при следующем разрешении remote authority; проект и контейнер пересоздавать не нужно. Отдельный регрессионный сценарий запускает r7, оставляет сервер работающим, затем открывает тот же профиль в новой сборке и проверяет наличие нового встроенного клиента БД.

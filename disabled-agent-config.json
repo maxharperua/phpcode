@@ -1,0 +1,56 @@
+{
+  "extensionId": "",
+  "chatExtensionId": "",
+  "chatExtensionOutputId": "",
+  "chatExtensionOutputExtensionStateCommand": "",
+  "documentationUrl": "",
+  "termsStatementUrl": "",
+  "privacyStatementUrl": "",
+  "skusDocumentationUrl": "",
+  "optimizeUsageDocumentationUrl": "",
+  "publicCodeMatchesUrl": "",
+  "managePlanUrl": "",
+  "upgradePlanUrl": "",
+  "signUpUrl": "",
+  "provider": {
+    "default": {
+      "id": "",
+      "name": ""
+    },
+    "enterprise": {
+      "id": "",
+      "name": ""
+    },
+    "google": {
+      "id": "",
+      "name": ""
+    },
+    "apple": {
+      "id": "",
+      "name": ""
+    },
+    "microsoft": {
+      "id": "",
+      "name": ""
+    }
+  },
+  "providerExtensionId": "",
+  "providerUriSetting": "",
+  "providerScopes": [],
+  "entitlementUrl": "",
+  "entitlementSignupLimitedUrl": "",
+  "chatQuotaExceededContext": "",
+  "completionsQuotaExceededContext": "",
+  "walkthroughCommand": "",
+  "completionsMenuCommand": "",
+  "chatRefreshTokenCommand": "",
+  "generateCommitMessageCommand": "",
+  "resolveMergeConflictsCommand": "",
+  "completionsAdvancedSetting": "",
+  "completionsEnablementSetting": "",
+  "nextEditSuggestionsSetting": "",
+  "tokenEntitlementUrl": "",
+  "mcpRegistryDataUrl": "",
+  "mcpConnectorsUrl": "",
+  "managedSettingsUrl": ""
+}

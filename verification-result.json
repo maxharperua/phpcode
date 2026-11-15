@@ -1,0 +1,338 @@
+{
+  "ok": true,
+  "application": "phpcode",
+  "upstreamVersion": "1.146.0",
+  "platform": "darwin-arm64",
+  "build": "r11",
+  "base": {
+    "ok": true,
+    "checks": [
+      "extension host API",
+      "two persistent file tabs",
+      "workspace edits",
+      "multiple terminals",
+      "Git activation",
+      "local VSIX installation and activation",
+      "search and settings commands",
+      "Dracula and scrolling defaults",
+      "excluded built-in provider absent",
+      "provider defaults disabled",
+      "default settings without vendor mentions"
+    ],
+    "verifiedBuild": "r5"
+  },
+  "branding": {
+    "ok": true,
+    "checks": [
+      "native application menus",
+      "workbench text and tooltips",
+      "vendor icon absent",
+      "command palette",
+      "terminal hints",
+      "previously enabled profile"
+    ],
+    "screenshot": "/Users/maxharper/Documents/phpcode/phpcode-product/release/phpcode-no-copilot-preview.png",
+    "verifiedBuild": "r5"
+  },
+  "package": {
+    "ok": true,
+    "checks": [
+      "Copilot SDK and extension excluded from client and both container servers",
+      "built-in Dev Container resolver and pinned CLI included",
+      "Linux ARM64 and amd64 servers match manifest checksums and include Node license",
+      "file references, history handoff, agent console, index and runtime included",
+      "final Dev Container component matches source and includes JSONC-preserving settings merge",
+      "existing Compose container execution uses the container ID returned by up",
+      "built-in database UI and portable pinned MySQL/PostgreSQL drivers with third-party licenses included in desktop and both container servers"
+    ]
+  },
+  "unitTests": {
+    "passing": 72,
+    "areas": [
+      "file reference parsing",
+      "Dev Container customization merging",
+      "manual, semi-automatic and automatic execution permissions",
+      "agent runtime and compaction",
+      "model budgets, cache usage and native transport",
+      "local project index",
+      "database connection validation and real driver/worker integration",
+      "dotenv database configuration parsing and secret separation"
+    ]
+  },
+  "validation": [
+    "typecheck-client",
+    "targeted ESLint",
+    "idempotent agent and Dev Container overlays",
+    "git diff --check",
+    "packaged Electron tests with real Docker ARM64 and amd64/Compose",
+    "r7 packaged regression: existing unlabeled Compose container with nested configuration",
+    "r8 database UI with six checks on real MariaDB/PostgreSQL",
+    "r8 database access from remote extension host and eleven Dev Container checks",
+    "r8 source syntax and git diff --check",
+    "r9 regression from a live previous-release server; new remote database commands load",
+    "installed application hotfix and database section visibly opened in existing user container",
+    "r10: eight database UI scenarios including automatic dotenv import, repeat import and profile restoration",
+    "installed importer created an actual workspace connection; read-only SELECT 1 with dotenv parameters succeeded without logging credentials",
+    "r11 ten UI scenarios; grid occupies more than 85% of the editor; sorting and searching across 650 rows",
+    "r11 real MySQL/MariaDB and PostgreSQL integration checks"
+  ],
+  "installer": {
+    "file": "phpcode-CodeOSS-1.146.0-arm64-r11.dmg",
+    "bytes": 653549888,
+    "sha256": "00bbddd5fe5b836b200ffda031f2e4598159b787d120522aaa541c41c20d72b0",
+    "hdiutilVerify": "VALID"
+  },
+  "agent": {
+    "ok": true,
+    "checks": [
+      "secure key setup and native model catalog",
+      "file and folder drag-and-drop context attachments",
+      "folder context can also be selected from the composer picker",
+      "local project index retrieves relevant bounded code snippets",
+      "persisted index excludes ignore rules, credentials and symlink escapes",
+      "saved file changes update persistent retrieval index",
+      "dirty editor text is searchable without persisting unsaved content",
+      "native streaming and multi-step file tools; proposal staged",
+      "processes and changed files collapsed by default",
+      "native diff editor",
+      "apply and safe undo through editor",
+      "automatic edit policy applies proposals without an Apply click",
+      "provider context window automatically replaces legacy 32k budget; implementation completes after more than 20 steps",
+      "large files expose subsequent line ranges instead of repeating a truncated prefix",
+      "automatic changes to existing files are saved before subsequent terminal tools",
+      "successive automatic edits can be undone back through prior file versions",
+      "manual mode waits for command approval and returns completion",
+      "semi-automatic mode applies edits immediately but still confirms commands",
+      "fully automatic commands run without approval; one bottom panel retains stdout, stderr and exit codes without new user terminals",
+      "command output streams while running and the console can stop a command",
+      "credential context excluded",
+      "Ask mode without mutation tools",
+      "Claude cache markers and reported cache token counters",
+      "Claude explicit cache opt-out",
+      "automatic model summarization before context budget with full visible history retained",
+      "automatic compaction during an active multi-step task retains the original request and reaches saved implementation",
+      "stop cancels native stream",
+      "closed chat restored with transcript",
+      "compressed provider context and full local history persist separately",
+      "sessions, transcript, mode and model restored after process restart",
+      "shared command journal and outcomes restore after restart",
+      "legacy 32k sessions migrate to model context and step-limit chats can continue with accurate diagnostics",
+      "legacy automatic-edit chats restore as semi-automatic without gaining command permissions"
+    ],
+    "fixture": "/private/tmp/phpcode-agent-fWuFPF",
+    "liveProviderTest": false,
+    "build": "r6",
+    "platform": "darwin-arm64",
+    "unitTests": {
+      "passing": 62,
+      "areas": [
+        "file reference parsing",
+        "Dev Container customization merging",
+        "manual, semi-automatic and automatic execution permissions",
+        "agent runtime and compaction",
+        "model budgets, cache usage and native transport",
+        "local project index"
+      ]
+    },
+    "validation": [
+      "typecheck-client",
+      "targeted ESLint",
+      "idempotent agent and Dev Container overlays"
+    ]
+  },
+  "liveProviderTest": false,
+  "devcontainers": {
+    "ok": true,
+    "cases": [
+      {
+        "ok": true,
+        "checks": [
+          "project configuration produces a dismissible Dev Container startup offer",
+          "persistent status-bar button reopens a dismissed project in a real remote container workspace",
+          "agent draft and execution mode transfer from the local workspace to the container",
+          "devcontainer editor customizations apply to the actual remote settings file",
+          "agent reads and edits container-only files and runs Linux commands with remoteEnv and container cwd",
+          "project index retrieves container code and excludes server internals and connection credentials",
+          "plain file paths and Markdown references open container files at the requested line",
+          "directory references reveal the folder in Explorer",
+          "project reopens locally with its container chat history retained"
+        ],
+        "fixture": "/private/tmp/phpcode-container-GMSFq9",
+        "architecture": "aarch64",
+        "configuration": "image",
+        "configFile": ".devcontainer.json",
+        "containerId": "77811f309161",
+        "cleanup": {
+          "driverTimedOut": true,
+          "forcedKill": false,
+          "mainExitCode": 0
+        },
+        "liveProviderTest": false
+      },
+      {
+        "ok": true,
+        "checks": [
+          "project configuration produces a dismissible Dev Container startup offer",
+          "persistent status-bar button reopens a dismissed project in a real remote container workspace",
+          "unavailable optional extensions do not prevent the remote workspace from opening",
+          "agent draft and execution mode transfer from the local workspace to the container",
+          "devcontainer editor customizations apply to the actual remote settings file",
+          "agent reads and edits container-only files and runs Linux commands with remoteEnv and container cwd",
+          "project index retrieves container code and excludes server internals and connection credentials",
+          "plain file paths and Markdown references open container files at the requested line",
+          "directory references reveal the folder in Explorer",
+          "project reopens locally with its container chat history retained"
+        ],
+        "fixture": "/private/tmp/phpcode-container-3NDmAJ",
+        "architecture": "x86_64",
+        "configuration": "compose",
+        "configFile": ".devcontainer/devcontainer.json",
+        "containerId": "c3250757f37f",
+        "cleanup": {
+          "driverTimedOut": false,
+          "forcedKill": false,
+          "mainExitCode": 0
+        },
+        "liveProviderTest": false
+      },
+      {
+        "ok": true,
+        "checks": [
+          "project configuration produces a dismissible Dev Container startup offer",
+          "persistent status-bar button reopens a dismissed project in a real remote container workspace",
+          "pre-existing Compose container without Dev Container labels opens using the nested project configuration",
+          "agent draft and execution mode transfer from the local workspace to the container",
+          "devcontainer editor customizations apply to the actual remote settings file",
+          "agent reads and edits container-only files and runs Linux commands with remoteEnv and container cwd",
+          "project index retrieves container code and excludes server internals and connection credentials",
+          "plain file paths and Markdown references open container files at the requested line",
+          "directory references reveal the folder in Explorer",
+          "project reopens locally with its container chat history retained"
+        ],
+        "fixture": "/private/tmp/phpcode-container-SC2pjZ",
+        "architecture": "x86_64",
+        "configuration": "existing-compose",
+        "configFile": ".devcontainer/php/devcontainer.json",
+        "containerId": "cec70f5c92bfdbe7a669a01a40fbc0b10f31b6abfe888f812bbe8c556926110a",
+        "cleanup": {
+          "driverTimedOut": false,
+          "forcedKill": false,
+          "mainExitCode": 0
+        },
+        "liveProviderTest": false,
+        "build": "r7"
+      },
+      {
+        "ok": true,
+        "checks": [
+          "project configuration produces a dismissible Dev Container startup offer",
+          "persistent status-bar button reopens a dismissed project in a real remote container workspace",
+          "pre-existing Compose container without Dev Container labels opens using the nested project configuration",
+          "agent draft and execution mode transfer from the local workspace to the container",
+          "built-in database client connects by Docker-only service hostname from the remote extension host",
+          "devcontainer editor customizations apply to the actual remote settings file",
+          "agent reads and edits container-only files and runs Linux commands with remoteEnv and container cwd",
+          "project index retrieves container code and excludes server internals and connection credentials",
+          "plain file paths and Markdown references open container files at the requested line",
+          "directory references reveal the folder in Explorer",
+          "project reopens locally with its container chat history retained"
+        ],
+        "fixture": "/private/tmp/phpcode-container-Kq4q06",
+        "architecture": "x86_64",
+        "configuration": "existing-compose",
+        "configFile": ".devcontainer/php/devcontainer.json",
+        "containerId": "45879df9e66ea759f92932b79ee1ec594afa967c7f4f73ad047ba64d67808a56",
+        "cleanup": {
+          "driverTimedOut": false,
+          "forcedKill": false,
+          "mainExitCode": 0
+        },
+        "liveProviderTest": false,
+        "build": "r8"
+      }
+    ],
+    "supported": "Linux glibc ARM64 and amd64",
+    "unsupported": [
+      "Alpine/musl",
+      "Windows containers"
+    ],
+    "regression": {
+      "previousBuild": "r6",
+      "previousError": "Dev container not found",
+      "reproduced": true,
+      "fixedBuild": "r7"
+    },
+    "upgrade": {
+      "previousBuild": "r7",
+      "brokenBuild": "r8",
+      "reproducedMissingDatabaseCommand": true,
+      "fixedBuild": "r9",
+      "verification": {
+        "ok": true,
+        "checks": [
+          "previous release leaves its remote server running before upgrading the same saved connection",
+          "project configuration produces a dismissible Dev Container startup offer",
+          "persistent status-bar button reopens a dismissed project in a real remote container workspace",
+          "pre-existing Compose container without Dev Container labels opens using the nested project configuration",
+          "agent execution mode survives the release upgrade",
+          "upgraded existing connection loads new remote database commands instead of reusing the old server socket",
+          "devcontainer editor customizations apply to the actual remote settings file",
+          "agent reads and edits container-only files and runs Linux commands with remoteEnv and container cwd",
+          "project index retrieves container code and excludes server internals and connection credentials",
+          "plain file paths and Markdown references open container files at the requested line",
+          "directory references reveal the folder in Explorer",
+          "project reopens locally with its container chat history retained"
+        ],
+        "fixture": "/private/tmp/phpcode-container-PWkZkL",
+        "architecture": "x86_64",
+        "configuration": "existing-compose",
+        "configFile": ".devcontainer/php/devcontainer.json",
+        "containerId": "131bd14b25b998eb838e072077c806448ca197836277ec408b1a7750229ba7a6",
+        "cleanup": {
+          "driverTimedOut": false,
+          "forcedKill": false,
+          "mainExitCode": 0
+        },
+        "liveProviderTest": false
+      }
+    }
+  },
+  "database": {
+    "ok": true,
+    "checks": [
+      "project .env automatically creates a working connection with its password held separately",
+      "explicit dotenv import updates the same profile without creating duplicates",
+      "two connections are tested and saved through the built-in UI",
+      "table data and schema open; UI updates and inserts reach the real database",
+      "compact icon toolbar leaves more than 85 percent of the editor height for the table",
+      "column sorting and search query all database rows, preserve paging and allow safe edits under a filter",
+      "native SQL file runs against selected PostgreSQL connection and renders multiple safe result sets",
+      "saved profile storage does not contain the plaintext database password",
+      "editing a connection preserves its existing secret without exposing the password in the form",
+      "multiple saved connection profiles and secret-backed authentication survive application restart"
+    ],
+    "fixture": "/private/tmp/phpcode-database-epszcZ",
+    "liveDatabases": [
+      "MariaDB 10.5.8",
+      "PostgreSQL 17"
+    ],
+    "build": "r11",
+    "dotenvTests": {
+      "passing": 7,
+      "areas": [
+        "literal passwords and metadata separation",
+        "CRLF, quotes, comments, empty passwords and local variable references",
+        "PostgreSQL URLs, incomplete configuration and no shell execution"
+      ]
+    },
+    "integrationTests": {
+      "passing": 3,
+      "areas": [
+        "real MySQL/MariaDB and PostgreSQL",
+        "server-side sort and stable paging beyond 200 rows",
+        "literal all-column and selected-column search; bounded validated sort parameters",
+        "safe edits of filtered rows, conflicts and cancellation"
+      ]
+    }
+  }
+}

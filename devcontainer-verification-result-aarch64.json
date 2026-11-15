@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "checks": [
+    "project configuration produces a dismissible Dev Container startup offer",
+    "persistent status-bar button reopens a dismissed project in a real remote container workspace",
+    "agent draft and execution mode transfer from the local workspace to the container",
+    "devcontainer editor customizations apply to the actual remote settings file",
+    "agent reads and edits container-only files and runs Linux commands with remoteEnv and container cwd",
+    "project index retrieves container code and excludes server internals and connection credentials",
+    "plain file paths and Markdown references open container files at the requested line",
+    "directory references reveal the folder in Explorer",
+    "project reopens locally with its container chat history retained"
+  ],
+  "fixture": "/private/tmp/phpcode-container-GMSFq9",
+  "architecture": "aarch64",
+  "configuration": "image",
+  "configFile": ".devcontainer.json",
+  "containerId": "77811f309161",
+  "cleanup": {
+    "driverTimedOut": true,
+    "forcedKill": false,
+    "mainExitCode": 0
+  },
+  "liveProviderTest": false
+}

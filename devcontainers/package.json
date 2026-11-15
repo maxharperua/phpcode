@@ -1,0 +1,30 @@
+{
+  "name": "devcontainers",
+  "displayName": "phpcode Dev Containers",
+  "description": "Built-in Dev Container workspace support for phpcode.",
+  "publisher": "phpcode",
+  "version": "0.1.0",
+  "license": "MIT",
+  "engines": { "vscode": "^1.146.0" },
+  "main": "./extension.cjs",
+  "extensionKind": ["ui"],
+  "enabledApiProposals": ["resolvers"],
+  "activationEvents": ["onStartupFinished", "onResolveRemoteAuthority:phpcode-container"],
+  "capabilities": { "untrustedWorkspaces": { "supported": "limited" }, "virtualWorkspaces": false },
+  "contributes": {
+    "commands": [
+      { "command": "phpcode.devcontainers.open", "title": "phpcode: Открыть в Dev Container", "icon": "$(remote)" },
+      { "command": "phpcode.devcontainers.local", "title": "phpcode: Открыть Проект Локально" },
+      { "command": "phpcode.devcontainers.log", "title": "phpcode: Журнал Dev Container" },
+      { "command": "phpcode.devcontainers.actions", "title": "phpcode: Действия Dev Container" }
+    ],
+    "configuration": {
+      "title": "phpcode Dev Container",
+      "properties": {
+        "phpcode.devcontainers.dockerPath": { "type": "string", "default": "", "scope": "machine", "description": "Путь к Docker CLI. Пустое значение — автоматический поиск." },
+        "phpcode.devcontainers.promptOnOpen": { "type": "boolean", "default": true, "description": "Предлагать открыть проект в Dev Container при обнаружении конфигурации." }
+      }
+    },
+    "resourceLabelFormatters": [{ "scheme": "vscode-remote", "authority": "phpcode-container+*", "formatting": { "label": "${path}", "separator": "/", "workspaceSuffix": "Dev Container", "workspaceTooltip": "phpcode Dev Container" } }]
+  }
+}

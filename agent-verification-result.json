@@ -1,0 +1,58 @@
+{
+  "ok": true,
+  "checks": [
+    "secure key setup and native model catalog",
+    "file and folder drag-and-drop context attachments",
+    "folder context can also be selected from the composer picker",
+    "local project index retrieves relevant bounded code snippets",
+    "persisted index excludes ignore rules, credentials and symlink escapes",
+    "saved file changes update persistent retrieval index",
+    "dirty editor text is searchable without persisting unsaved content",
+    "native streaming and multi-step file tools; proposal staged",
+    "processes and changed files collapsed by default",
+    "native diff editor",
+    "apply and safe undo through editor",
+    "automatic edit policy applies proposals without an Apply click",
+    "provider context window automatically replaces legacy 32k budget; implementation completes after more than 20 steps",
+    "large files expose subsequent line ranges instead of repeating a truncated prefix",
+    "automatic changes to existing files are saved before subsequent terminal tools",
+    "successive automatic edits can be undone back through prior file versions",
+    "manual mode waits for command approval and returns completion",
+    "semi-automatic mode applies edits immediately but still confirms commands",
+    "fully automatic commands run without approval; one bottom panel retains stdout, stderr and exit codes without new user terminals",
+    "command output streams while running and the console can stop a command",
+    "credential context excluded",
+    "Ask mode without mutation tools",
+    "Claude cache markers and reported cache token counters",
+    "Claude explicit cache opt-out",
+    "automatic model summarization before context budget with full visible history retained",
+    "automatic compaction during an active multi-step task retains the original request and reaches saved implementation",
+    "stop cancels native stream",
+    "closed chat restored with transcript",
+    "compressed provider context and full local history persist separately",
+    "sessions, transcript, mode and model restored after process restart",
+    "shared command journal and outcomes restore after restart",
+    "legacy 32k sessions migrate to model context and step-limit chats can continue with accurate diagnostics",
+    "legacy automatic-edit chats restore as semi-automatic without gaining command permissions"
+  ],
+  "fixture": "/private/tmp/phpcode-agent-fWuFPF",
+  "liveProviderTest": false,
+  "build": "r6",
+  "platform": "darwin-arm64",
+  "unitTests": {
+    "passing": 62,
+    "areas": [
+      "file reference parsing",
+      "Dev Container customization merging",
+      "manual, semi-automatic and automatic execution permissions",
+      "agent runtime and compaction",
+      "model budgets, cache usage and native transport",
+      "local project index"
+    ]
+  },
+  "validation": [
+    "typecheck-client",
+    "targeted ESLint",
+    "idempotent agent and Dev Container overlays"
+  ]
+}

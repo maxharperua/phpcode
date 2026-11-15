@@ -1,0 +1,12 @@
+# Packaging output (dmg images, patch backups)
+release/
+
+# Installed dependencies
+node_modules/
+
+# Server tarballs are rebuilt by `node package-container-server.cjs <platform>`.
+# Only the checksum manifest devcontainers/assets/servers.json is tracked.
+devcontainers/assets/*.tar.gz
+
+# macOS metadata
+.DS_Store
