@@ -11,13 +11,18 @@ on:
         description: 'Reuse container-servers from this run (component source digest must match)'
         type: string
         default: ''
+      desktop_os:
+        description: 'Desktop platform to validate'
+        type: choice
+        options: [all, linux, windows, macos]
+        default: all
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: build-${{ github.ref }}-${{ inputs.server_run_id || 'fresh' }}
+  group: build-${{ github.ref }}-${{ inputs.server_run_id || 'fresh' }}-${{ inputs.desktop_os || 'all' }}
   cancel-in-progress: true
 
 jobs:
@@ -76,12 +81,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2025, macos-15]
+        os: ${{ fromJSON(inputs.desktop_os == 'linux' && '["ubuntu-24.04"]' || inputs.desktop_os == 'windows' && '["windows-2025"]' || inputs.desktop_os == 'macos' && '["macos-15"]' || '["ubuntu-24.04", "windows-2025", "macos-15"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     env:
       VSCODE_SEQUENTIAL_NATIVE_INSTALLS: '1'
-      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_OPTIONS: ${{ runner.os == 'Linux' && '--max-old-space-size=4096' || '--max-old-space-size=8192' }}
+      GOMEMLIMIT: 1536MiB
     steps:
       - uses: actions/checkout@v4
       - name: Free Linux runner storage
@@ -90,6 +96,14 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
           docker image prune --all --force
           df -h /
+      - name: Add Linux build swap
+        if: runner.os == 'Linux'
+        run: |
+          sudo fallocate -l 8G /swapfile-phpcode
+          sudo chmod 600 /swapfile-phpcode
+          sudo mkswap /swapfile-phpcode
+          sudo swapon /swapfile-phpcode
+          free -h
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
