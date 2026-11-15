@@ -29,7 +29,8 @@ if (process.platform === 'win32') {
 	// A script file and arguments avoid interpolating paths into PowerShell source.
 	run('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', path.join(repo, 'scripts/zip.ps1'), '-Source', directory, '-Destination', path.join(output, `${name}.zip`)]);
 } else if (process.platform === 'linux') {
-	pnpm(['run', 'gulp', `vscode-${target}-prepare-deb`, `vscode-${target}-build-deb`], upstream);
+	pnpm(['run', 'gulp', `vscode-${target}-prepare-deb`], upstream);
+	pnpm(['run', 'gulp', `vscode-${target}-build-deb`], upstream);
 	if (!copyMatching(path.join(upstream, '.build/linux/deb'), '.deb')) { throw new Error('Debian package was not produced.'); }
 	run('tar', ['-czf', path.join(output, `${name}.tar.gz`), '-C', path.dirname(directory), path.basename(directory)]);
 } else {

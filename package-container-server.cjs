@@ -21,6 +21,7 @@ fs.cpSync(dependencies, path.join(output, 'node_modules'), { recursive: true, ve
 fs.copyFileSync(node, path.join(output, 'node')); fs.chmodSync(path.join(output, 'node'), 0o755);
 fs.copyFileSync(path.join(path.dirname(node), 'node.LICENSE'), path.join(output, 'node.LICENSE'));
 fs.copyFileSync(path.join(upstream, 'LICENSE.txt'), path.join(output, 'LICENSE.txt'));
+fs.copyFileSync(path.join(upstream, 'ThirdPartyNotices.txt'), path.join(output, 'ThirdPartyNotices.txt'));
 const pkg = JSON.parse(fs.readFileSync(path.join(upstream, 'package.json')));
 const product = JSON.parse(fs.readFileSync(path.join(upstream, 'product.json')));
 product.commit = git(['rev-parse', 'HEAD']);

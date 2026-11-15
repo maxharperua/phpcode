@@ -81,7 +81,9 @@ async function main() {
 		assertUpstream(); applySources(); applyRuntime();
 		const platforms = options.length ? options : lock.serverPlatforms;
 		if (platforms.some(platform => !lock.serverPlatforms.includes(platform))) { throw new Error('Servers support linux-x64 and linux-arm64 only.'); }
-		pnpm(['run', 'gulp', 'compile-non-native-extensions-build', 'compile-native-extensions-build', 'compile-extension-media-build'], upstream);
+		for (const task of ['compile-non-native-extensions-build', 'compile-native-extensions-build', 'compile-extension-media-build']) {
+			pnpm(['run', 'gulp', task], upstream);
+		}
 		run(process.execPath, ['build/next/index.ts', 'bundle', '--nls', '--target', 'server', '--out', 'out-phpcode-server'], { cwd: upstream });
 		for (const platform of platforms) {
 			script('build-container-dependencies.cjs', [platform]);
