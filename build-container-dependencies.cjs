@@ -14,14 +14,16 @@ if (fs.existsSync(path.join(cache, 'servers', platform, 'build'))) { fs.rmSync(p
 const output = path.join(cache, 'servers', platform);
 const build = path.join(output, 'build');
 const dockerPlatform = arch === 'x64' ? 'linux/amd64' : 'linux/arm64';
+// Classic Docker image stores cannot keep two architectures under the same index digest.
+const image = lock.serverImages[platform];
 const name = 'phpcode-server-build-' + crypto.randomBytes(6).toString('hex');
 const docker = args => execFileSync('docker', args, { stdio: 'inherit' });
 for (const relative of ['remote/package.json', 'remote/pnpm-lock.yaml', 'remote/pnpm-workspace.yaml', 'remote/.pnpmfile.mjs', 'remote/web/package.json', 'build/npm/pnpm/nativeBuildEnv.ts']) {
 	const target = path.join(build, relative); fs.mkdirSync(path.dirname(target), { recursive: true });
 	fs.copyFileSync(path.join(upstream, relative), target);
 }
-docker(['pull', '--platform', dockerPlatform, lock.serverImage]);
-docker(['create', '--platform', dockerPlatform, '--name', name, lock.serverImage, 'sleep', 'infinity']);
+docker(['pull', '--platform', dockerPlatform, image]);
+docker(['create', '--platform', dockerPlatform, '--name', name, image, 'sleep', 'infinity']);
 try {
 	docker(['start', name]);
 	docker(['cp', build, name + ':/work']);

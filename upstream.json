@@ -5,5 +5,9 @@
 	"node": "24.22.1",
 	"pnpm": "12.16.0",
 	"serverImage": "node:24.22.1-bookworm@sha256:d862bb5d082c5ae0210ac07e8c0344cb8cf7bef6d78e9b8c50c179da923108ea",
+	"serverImages": {
+		"linux-x64": "node:24.22.1-bookworm@sha256:0925478b811e8890f5508ad2a75135933310effd45492696ecf7c111c8339d02",
+		"linux-arm64": "node:24.22.1-bookworm@sha256:a217980f5435fcc8e8896361099faecb1c5d7f341cb7a213ff75e986d822473e"
+	},
 	"serverPlatforms": ["linux-x64", "linux-arm64"]
 }
