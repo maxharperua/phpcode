@@ -1,0 +1,24 @@
+{
+	"name": "phpcode",
+	"version": "0.1.0",
+	"private": true,
+	"license": "MIT",
+	"packageManager": "pnpm@12.16.0",
+	"engines": { "node": "24.22.1" },
+	"scripts": {
+		"bootstrap": "node scripts/phpcode.cjs bootstrap",
+		"apply": "node scripts/phpcode.cjs apply",
+		"build": "node scripts/phpcode.cjs build",
+		"start": "node scripts/phpcode.cjs start",
+		"test": "node --test scripts/build.test.cjs database/env.test.cjs devcontainers/configuration.test.cjs",
+		"test:database": "node scripts/test-database.cjs",
+		"servers": "node scripts/phpcode.cjs servers",
+		"package": "node scripts/phpcode.cjs package",
+		"doctor": "node scripts/phpcode.cjs doctor"
+	},
+	"devDependencies": {
+		"@devcontainers/cli": "0.88.0",
+		"esbuild": "0.28.1",
+		"jsonc-parser": "3.2.0"
+	}
+}

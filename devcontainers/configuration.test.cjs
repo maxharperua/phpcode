@@ -4,9 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const { createRequire } = require('node:module');
-const jsonc = createRequire(path.join(__dirname, '../../phpcode-oss/extensions/package.json'))('jsonc-parser');
+const jsonc = require('jsonc-parser');
 const { readCustomizations, mergeSettingsDocument } = require('./configuration.cjs');
 test('handles the actual CLI mergedConfiguration.customizations.vscode array', () => {
 	assert.deepEqual(readCustomizations([{ settings: { 'editor.tabSize': 4 }, extensions: ['vendor.php', 'vendor.removed'] }, { settings: { 'editor.tabSize': 3 }, extensions: ['-vendor.removed', 'vendor.php@2.0.0'] }]), { settings: { 'editor.tabSize': 3 }, extensions: ['vendor.php@2.0.0'] });

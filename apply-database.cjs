@@ -4,8 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 const fs = require('node:fs');
 const path = require('node:path');
-const { createRequire } = require('node:module');
-const root = path.resolve(process.argv[2] || path.join(__dirname, '../phpcode-oss'));
+const root = path.resolve(process.argv[2] || require('./scripts/lib.cjs').upstream);
 const runtime = path.join(__dirname, 'database-runtime');
 const destination = path.join(root, 'extensions/phpcode-database');
 fs.mkdirSync(destination, { recursive: true });
@@ -13,7 +12,7 @@ fs.cpSync(path.join(__dirname, 'database'), destination, { recursive: true, filt
 fs.copyFileSync(path.join(root, 'LICENSE.txt'), path.join(destination, 'LICENSE.txt'));
 for (const name of ['codicon.css', 'codicon.ttf']) { fs.copyFileSync(path.join(root, 'node_modules/@vscode/codicons/dist', name), path.join(destination, 'media', name)); }
 fs.copyFileSync(path.join(root, 'node_modules/@vscode/codicons/LICENSE'), path.join(destination, 'media/codicons.LICENSE'));
-const esbuild = createRequire(path.join(root, 'extensions/package.json'))('esbuild');
+const esbuild = require('esbuild');
 const bundled = esbuild.buildSync({ stdin: { contents: "exports.mysql = require('mysql2'); exports.pg = require('pg');", resolveDir: runtime, sourcefile: 'drivers.cjs' }, bundle: true, platform: 'node', format: 'cjs', target: 'node24', external: ['pg-native'], outfile: path.join(destination, 'runtime/drivers.cjs'), metafile: true, logLevel: 'warning' });
 const licenses = new Map();
 for (const file of Object.keys(bundled.metafile.inputs)) {

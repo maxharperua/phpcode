@@ -1,0 +1,54 @@
+diff --git a/src/vs/workbench/services/accounts/test/browser/defaultAccount.test.ts b/src/vs/workbench/services/accounts/test/browser/defaultAccount.test.ts
+index ee042bc0..fc28fba9 100644
+--- a/src/vs/workbench/services/accounts/test/browser/defaultAccount.test.ts
++++ b/src/vs/workbench/services/accounts/test/browser/defaultAccount.test.ts
+@@ -41,6 +41,11 @@ import { AccountPolicyGateState, AccountPolicyService } from '../../../policies/
+ suite('DefaultAccountProvider', () => {
+ 
+ 	const disposables = ensureNoDisposablesAreLeakedInTestSuite();
++
++	test('phpcode account service initializes without a bundled provider', async () => {
++		const service = disposables.add(new DefaultAccountService({ ...TestProductService, enableBuiltinCopilot: false }));
++		assert.deepStrictEqual({ account: await service.getDefaultAccount(), signIn: await service.signIn(), refresh: await service.refresh() }, { account: null, signIn: null, refresh: null });
++	});
+ 	const accountId = 'account';
+ 	const sessions: AuthenticationSession[] = [{
+ 		id: 'session',
+diff --git a/src/vs/workbench/services/preferences/test/common/preferencesModels.test.ts b/src/vs/workbench/services/preferences/test/common/preferencesModels.test.ts
+index ee0974db..9e4f8cea 100644
+--- a/src/vs/workbench/services/preferences/test/common/preferencesModels.test.ts
++++ b/src/vs/workbench/services/preferences/test/common/preferencesModels.test.ts
+@@ -11,6 +11,7 @@ import { TestConfigurationService } from '../../../../../platform/configuration/
+ import { Extensions, IConfigurationRegistry, IConfigurationNode } from '../../../../../platform/configuration/common/configurationRegistry.js';
+ import { Registry } from '../../../../../platform/registry/common/platform.js';
+ import { ConfigurationTarget } from '../../../../../platform/configuration/common/configuration.js';
++import product from '../../../../../platform/product/common/product.js';
+ 
+ suite('DefaultSettings', () => {
+ 	const disposables = ensureNoDisposablesAreLeakedInTestSuite();
+@@ -22,6 +23,25 @@ suite('DefaultSettings', () => {
+ 		configurationService = new TestConfigurationService();
+ 	});
+ 
++	test('phpcode hides vendor settings without removing their internal schemas', () => {
++		const config: IConfigurationNode = {
++			id: 'phpcodeBrandingTest',
++			title: 'phpcode Branding Test',
++			properties: {
++				'phpcodeBrandingTest.editor': { type: 'boolean', default: true, description: 'Editor feature' },
++				'phpcodeBrandingTest.vendor': { type: 'boolean', default: false, description: 'Enable GitHub Copilot' }
++			}
++		};
++		configurationRegistry.registerConfiguration(config);
++		disposables.add(toDisposable(() => configurationRegistry.deregisterConfigurations([config])));
++		const defaults = disposables.add(new DefaultSettings([], ConfigurationTarget.USER, configurationService));
++		const settings = defaults.getRegisteredGroups().flatMap(group => group.sections).flatMap(section => section.settings).filter(setting => setting.key.startsWith('phpcodeBrandingTest.')).map(setting => setting.key).sort();
++		assert.deepStrictEqual({ settings, internalSchemaPreserved: !!configurationRegistry.getConfigurationProperties()['phpcodeBrandingTest.vendor'] }, {
++			settings: product.enableBuiltinCopilot === false ? ['phpcodeBrandingTest.editor'] : ['phpcodeBrandingTest.editor', 'phpcodeBrandingTest.vendor'],
++			internalSchemaPreserved: true
++		});
++	});
++
+ 	test('preserves deprecation message presentation', () => {
+ 		const config: IConfigurationNode = {
+ 			id: 'deprecatedSettings',

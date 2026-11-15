@@ -10,3 +10,13 @@ devcontainers/assets/*.tar.gz
 
 # macOS metadata
 .DS_Store
+
+# Managed upstream, build tools, native dependencies and packages
+.build/
+
+# Local credentials and configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key

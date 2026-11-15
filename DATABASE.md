@@ -12,7 +12,7 @@
 
 Сейчас поддерживаются MySQL/MariaDB и PostgreSQL. SQLite, SSH-туннели, импорт дампов с клиентскими директивами `DELIMITER`/`\copy`, произвольные сертификаты CA и визуальное изменение структуры таблиц пока не реализованы. DDL можно выполнять через SQL.
 
-Перед первым применением выполните из `phpcode-product`: `./run.sh pnpm --dir "$PWD/database-runtime" install --frozen-lockfile`. Сборка: `database-runtime/package.json` и lockfile закрепляют mysql2 3.24.6 и pg 8.23.1. `apply-database.cjs` собирает переносимые JS-драйверы, включает лицензии зависимостей и копирует компонент в Code OSS. `package-container-server.cjs` включает его в серверы обеих архитектур. Интерфейс использует токены темы; строки вынесены в bundle локализации.
+Команда `node scripts/phpcode.cjs bootstrap` устанавливает закреплённые зависимости драйверов и применяет компонент. После изменения исходников выполните `node scripts/phpcode.cjs apply`. Сборка: `database-runtime/package.json` и lockfile закрепляют mysql2 3.24.6 и pg 8.23.1. `apply-database.cjs` собирает переносимые JS-драйверы, включает лицензии зависимостей и копирует компонент в Code OSS. `package-container-server.cjs` включает его в серверы обеих архитектур. Интерфейс использует токены темы; строки вынесены в bundle локализации.
 
 Проверки: `database/database.test.cjs` выполняет реальные операции в отдельных тестовых MariaDB/PostgreSQL; `verify-database.cjs` управляет упакованным приложением и проверяет форму, сохранение нескольких подключений, редактирование данных, структуру, запуск SQL-файла и восстановление после перезапуска. Тестовые БД — одноразовые контейнеры `phpcode-db-test-mysql` и `phpcode-db-test-postgres` без пользовательских данных.
 

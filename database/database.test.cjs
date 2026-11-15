@@ -6,7 +6,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const built = path.resolve(__dirname, '../../phpcode-oss/extensions/phpcode-database');
+const built = path.join(require('../scripts/lib.cjs').upstream, 'extensions/phpcode-database');
 const { Database, configuration } = require(path.join(built, 'database.cjs'));
 const { Session } = require(path.join(built, 'session.cjs'));
 test('connection metadata excludes passwords and rejects invalid ports and blank identifiers', () => {
@@ -15,7 +15,7 @@ test('connection metadata excludes passwords and rejects invalid ports and blank
 });
 for (const engine of ['mysql', 'postgres']) {
 	test(`${engine}: real tables, quoted names, exact values, atomic edits, conflicts, scripts and cancellation`, async () => {
-		const output = execFileSync('docker', ['port', 'phpcode-db-test-' + engine, engine === 'mysql' ? '3306' : '5432'], { encoding: 'utf8' });
+		const output = execFileSync('docker', ['port', process.env[engine === 'mysql' ? 'PHPCODE_TEST_MYSQL_CONTAINER' : 'PHPCODE_TEST_POSTGRES_CONTAINER'] || 'phpcode-db-test-' + engine, engine === 'mysql' ? '3306' : '5432'], { encoding: 'utf8' });
 		const config = { engine, name: engine, host: '127.0.0.1', port: Number(output.trim().split(':').at(-1)), user: engine === 'mysql' ? 'root' : 'postgres', database: 'phpcode_test' };
 		const db = new Database(config, 'phpcode-test'); const other = new Database(config, 'phpcode-test');
 		await db.connect(); await other.connect();

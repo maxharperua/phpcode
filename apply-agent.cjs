@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const root = path.resolve(process.argv[2] || path.join(__dirname, '../phpcode-oss'));
+const root = path.resolve(process.argv[2] || require('./scripts/lib.cjs').upstream);
 const destination = path.join(root, 'src/vs/workbench/contrib/phpcode');
 fs.cpSync(path.join(__dirname, 'agent'), destination, { recursive: true, filter: source => !source.endsWith('.test.ts') });
 const testDir = path.join(destination, 'test/common'); fs.mkdirSync(testDir, { recursive: true });

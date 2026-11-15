@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const root = path.resolve(process.argv[2] || path.join(__dirname, '../phpcode-oss'));
+const root = path.resolve(process.argv[2] || require('./scripts/lib.cjs').upstream);
 function patch(file, before, after) {
 	const target = path.join(root, file);
 	const source = fs.readFileSync(target, 'utf8');

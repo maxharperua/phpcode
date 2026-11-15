@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const root = path.resolve(process.argv[2] || path.join(__dirname,'../phpcode-oss'));
+const root = path.resolve(process.argv[2] || require('./scripts/lib.cjs').upstream);
 const file = path.join(root,'product.json');
 const product = JSON.parse(fs.readFileSync(file,'utf8'));
 const overrides = JSON.parse(fs.readFileSync(path.join(__dirname,'product-overrides.json'),'utf8'));

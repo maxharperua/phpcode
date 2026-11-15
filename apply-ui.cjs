@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const root = path.resolve(process.argv[2] || path.join(__dirname, '../phpcode-oss'));
+const root = path.resolve(process.argv[2] || require('./scripts/lib.cjs').upstream);
 const writeJson = (file, value) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify(value, null, '\t') + '\n'); };
 const themeRoot = path.join(root, 'extensions/theme-defaults');
 const colors = {

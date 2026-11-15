@@ -1,0 +1,112 @@
+name: Build phpcode
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm test
+
+  servers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      VSCODE_SEQUENTIAL_NATIVE_INSTALLS: '1'
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install native build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - run: node scripts/phpcode.cjs bootstrap
+      - run: corepack pnpm test
+      - run: corepack pnpm test:database
+      - name: Build both container servers from the same source
+        run: node scripts/phpcode.cjs servers
+      - uses: actions/upload-artifact@v4
+        with:
+          name: container-servers
+          path: .build/server-assets/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  desktop:
+    needs: [tests, servers]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    env:
+      VSCODE_SEQUENTIAL_NATIVE_INSTALLS: '1'
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install Linux prerequisites
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3 fakeroot rpm
+      - name: Install Windows native build components
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installer = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $installation = & $vswhere -latest -products '*' -property installationPath
+          if (-not $installation) { throw 'Visual Studio Build Tools are required' }
+          $components = @(
+            '--add', 'Microsoft.VisualStudio.Workload.VCTools',
+            '--add', 'Microsoft.VisualStudio.Component.Windows11SDK.26100',
+            '--add', 'Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre',
+            '--add', 'Microsoft.VisualStudio.Component.VC.ATL.Spectre',
+            '--add', 'Microsoft.VisualStudio.Component.VC.ATLMFC.Spectre'
+          )
+          $arguments = @('modify', '--installPath', "`"$installation`"", '--quiet', '--norestart', '--wait') + $components
+          $process = Start-Process -FilePath $installer -ArgumentList $arguments -Wait -PassThru
+          if ($process.ExitCode -notin @(0, 3010)) { throw "Build Tools installation failed: $($process.ExitCode)" }
+      - uses: actions/download-artifact@v4
+        with:
+          name: container-servers
+          path: .build/server-assets/
+      - run: node scripts/phpcode.cjs bootstrap
+      - run: node scripts/phpcode.cjs build
+      - run: node scripts/phpcode.cjs package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phpcode-${{ runner.os }}-${{ runner.arch }}
+          path: .build/artifacts/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14

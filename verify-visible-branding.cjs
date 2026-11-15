@@ -2,11 +2,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createRequire } = require('node:module');
 const assert = require('node:assert/strict');
-const root = path.resolve(__dirname, '../phpcode-oss');
+const root = require('./scripts/lib.cjs').upstream;
 const { _electron } = createRequire(path.join(root, 'package.json'))('playwright');
 
 (async () => {
-	const fixture = fs.mkdtempSync('/private/tmp/phpcode-branding-');
+	const fixture = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'phpcode-branding-'));
 	const profile = path.join(fixture, 'profile');
 	fs.mkdirSync(path.join(profile, 'User'), { recursive: true });
 	// Exercise the product gate with a profile that previously enabled the vendor UI.

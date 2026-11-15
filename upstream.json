@@ -1,0 +1,9 @@
+{
+	"repository": "https://github.com/microsoft/vscode.git",
+	"ref": "1.146.0",
+	"commit": "69047191fc427f2f92828279aae1d90d8eeda7ab",
+	"node": "24.22.1",
+	"pnpm": "12.16.0",
+	"serverImage": "node:24.22.1-bookworm@sha256:d862bb5d082c5ae0210ac07e8c0344cb8cf7bef6d78e9b8c50c179da923108ea",
+	"serverPlatforms": ["linux-x64", "linux-arm64"]
+}

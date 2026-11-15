@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const root = path.resolve(process.argv[2] || path.join(__dirname, '../phpcode-oss'));
+const root = path.resolve(process.argv[2] || require('./scripts/lib.cjs').upstream);
 const file = path.join(root, 'build/gulpfile.vscode.ts');
 let source = fs.readFileSync(file, 'utf8');
 function replace(before, after) {

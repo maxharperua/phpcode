@@ -4,15 +4,21 @@
  *--------------------------------------------------------------------------------------------*/
 const fs = require('node:fs');
 const path = require('node:path');
-const root = path.resolve(process.argv[2] || path.join(__dirname, '../phpcode-oss'));
+const root = path.resolve(process.argv[2] || require('./scripts/lib.cjs').upstream);
 const destination = path.join(root, 'extensions/phpcode-devcontainers');
 fs.mkdirSync(destination, { recursive: true });
-fs.cpSync(path.join(__dirname, 'devcontainers'), destination, { recursive: true, filter: source => !source.endsWith('.test.cjs') });
+const sourceAssets = path.join(__dirname, 'devcontainers/assets');
+fs.cpSync(path.join(__dirname, 'devcontainers'), destination, { recursive: true, filter: source => source !== sourceAssets && !source.endsWith('.test.cjs') });
+const serverAssets = path.join(require('./scripts/lib.cjs').build, 'server-assets');
+if (fs.existsSync(serverAssets)) { fs.cpSync(serverAssets, path.join(destination, 'assets'), { recursive: true }); }
 fs.copyFileSync(path.join(root, 'LICENSE.txt'), path.join(destination, 'LICENSE.txt'));
-const runtime = path.join(destination, 'runtime'); fs.mkdirSync(runtime, { recursive: true });
-fs.cpSync(path.join(root, 'extensions/node_modules/jsonc-parser'), path.join(runtime, 'jsonc-parser'), { recursive: true });
-fs.copyFileSync(path.join(root, 'node_modules/@devcontainers/cli/dist/spec-node/devContainersSpecCLI.js'), path.join(runtime, 'cli.js'));
-for (const file of ['LICENSE.txt', 'ThirdPartyNotices.txt']) { fs.copyFileSync(path.join(root, 'node_modules/@devcontainers/cli', file), path.join(runtime, file)); }
+if (!process.argv.includes('--sources-only')) {
+	const runtime = path.join(destination, 'runtime'); fs.mkdirSync(runtime, { recursive: true });
+	fs.cpSync(path.dirname(require.resolve('jsonc-parser/package.json')), path.join(runtime, 'jsonc-parser'), { recursive: true });
+	const cli = path.dirname(require.resolve('@devcontainers/cli/package.json'));
+	fs.copyFileSync(path.join(cli, 'dist/spec-node/devContainersSpecCLI.js'), path.join(runtime, 'cli.js'));
+	for (const file of ['LICENSE.txt', 'ThirdPartyNotices.txt']) { fs.copyFileSync(path.join(cli, file), path.join(runtime, file)); }
+}
 const productFile = path.join(root, 'product.json');
 const product = JSON.parse(fs.readFileSync(productFile));
 product.extensionEnabledApiProposals = { ...product.extensionEnabledApiProposals, 'phpcode.devcontainers': ['resolvers'] };

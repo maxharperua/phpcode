@@ -12,23 +12,17 @@
 
 ## Сборка
 
-`apply-devcontainers.cjs` копирует исходники встроенного компонента, CLI с лицензиями и архивы из `devcontainers/assets`, разрешает API remote resolver и исключает неиспользуемую команду сертификатов прежнего провайдера из server entrypoint. Повторное применение не меняет результат. `package-container-server.cjs` собирает архив для каждой архитектуры и обновляет SHA-256 manifest; SDK и расширение Copilot в сервер не включаются.
+`apply-devcontainers.cjs` копирует исходники встроенного компонента, CLI с лицензиями и сгенерированные архивы из `.build/server-assets`, разрешает API remote resolver и исключает неиспользуемую команду сертификатов прежнего провайдера из server entrypoint. Повторное применение не меняет результат. `package-container-server.cjs` собирает архив для каждой архитектуры и обновляет SHA-256 manifest; SDK и расширение Copilot в сервер не включаются.
 
-Нативные зависимости собираются отдельно от macOS `node_modules`, с исходными `remote/package.json`, lockfile и pnpm hooks. `build-container-dependencies.cjs linux-arm64` и `linux-x64` используют одноразовые Docker-контейнеры `node:24.22.1-bookworm`, закреплённый pnpm и `--frozen-lockfile`. Для упаковки нужны проверенные официальными SHASUMS Linux Node runtime в `tools/phpcode-build/node-v24.22.1-linux-{arm64,x64}`.
+Нативные зависимости и Linux Node runtime собираются отдельно от зависимостей хоста в одноразовых Docker-контейнерах. Образ Node 24.22.1 Debian Bookworm закреплён по digest в `upstream.json`, исходники и pnpm lockfile — по коммиту Code OSS. Команда `node scripts/phpcode.cjs servers` компилирует встроенные расширения и сервер, затем создаёт архивы обеих архитектур и manifest SHA-256 в `.build/server-assets/`. Команда `build` проверяет их перед упаковкой приложения. Для сборки другой архитектуры в Docker требуется QEMU (в Docker Desktop уже доступен). Alpine/musl и Windows-контейнеры не поддерживаются.
 
 ```sh
-./run.sh node build/next/index.ts bundle --nls --target server --out out-phpcode-server
-node build-container-dependencies.cjs linux-arm64
-node build-container-dependencies.cjs linux-x64
-node package-container-server.cjs linux-arm64
-node package-container-server.cjs linux-x64
-node apply-devcontainers.cjs ../phpcode-oss
-node apply-agent.cjs ../phpcode-oss
-./run.sh pnpm run build-fast --client-only
-./run.sh pnpm run gulp vscode-darwin-arm64
+node scripts/phpcode.cjs bootstrap
+node scripts/phpcode.cjs servers
+node scripts/phpcode.cjs build
 ```
 
-Для нового checkout сначала применяются product/UI/build/removal/provider overlays и `apply-devcontainers.cjs`, затем собирается server bundle: optional provider certificate import должен быть исключён до bundling.
+Полное описание подготовки Windows, Linux и macOS — в [docs/BUILDING.md](docs/BUILDING.md).
 
 ## Проверка
 
@@ -37,8 +31,8 @@ node apply-agent.cjs ../phpcode-oss
 Регрессия r7: при `PHPCODE_CONTAINER_TEST_COMPOSE=1 PHPCODE_CONTAINER_TEST_EXISTING_COMPOSE=1` тест сначала запускает Compose-сервис вне Dev Containers, проверяет отсутствие меток Dev Container, затем открывает его по вложенной конфигурации `.devcontainer/php/devcontainer.json` и выполняет полный сценарий удалённого агента. До исправления этот сценарий воспроизводил `Dev container not found`; после исправления проходит без пересоздания контейнера.
 
 ```sh
-./run.sh node ../phpcode-product/verify-devcontainers.cjs
-PHPCODE_CONTAINER_TEST_IMAGE=node:24.22.1-bookworm ./run.sh node ../phpcode-product/verify-devcontainers.cjs
+node verify-devcontainers.cjs
+PHPCODE_CONTAINER_TEST_IMAGE=node:24.22.1-bookworm node verify-devcontainers.cjs
 ```
 
 Первый прогон использует локальную тестовую метку `phpcode-test-node:arm64` для ARM64-образа Node. Результаты и снимок интерфейса сохраняются в `devcontainer-verification-result-*.json` и `release/phpcode-devcontainer-preview.png`.

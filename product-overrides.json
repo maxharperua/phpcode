@@ -15,5 +15,21 @@
     "itemUrl": "https://open-vsx.org/vscode/item",
     "resourceUrlTemplate": "https://open-vsx.org/vscode/unpkg/{publisher}/{name}/{version}/{path}",
     "extensionUrlTemplate": "https://open-vsx.org/vscode/gallery/{publisher}/{name}/latest"
-  }
+  },
+  "win32MutexName": "phpcode",
+  "win32DirName": "phpcode",
+  "win32NameVersion": "phpcode",
+  "win32RegValueName": "phpcode",
+  "win32AppUserModelId": "phpcode.Desktop",
+  "win32ShellNameShort": "phpcode",
+  "win32TunnelServiceMutex": "phpcode-tunnelservice",
+  "win32TunnelMutex": "phpcode-tunnel",
+  "tunnelApplicationName": "phpcode-tunnel",
+  "linuxDesktopName": "dev.phpcode.desktop",
+  "linuxIconName": "phpcode",
+  "reportIssueUrl": "https://github.com/maxharperua/phpcode/issues/new",
+  "win32x64AppId": "{{3BEBB087-0088-4258-B5C0-C4100040BAB4}",
+  "win32arm64AppId": "{{E4032B55-4218-43AD-BFC6-662D918FEEC2}",
+  "win32x64UserAppId": "{{23CEFEFF-CEFA-4419-9C01-CF3DE5A7DB90}",
+  "win32arm64UserAppId": "{{3E143132-4EC2-474D-B184-C9A91616B54E}"
 }

@@ -6,37 +6,37 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
-const root = path.resolve(__dirname, '..');
+const { upstream, build, lock, git } = require('./scripts/lib.cjs');
 const platform = process.argv[2] || 'linux-arm64';
-if (!['linux-arm64', 'linux-x64', 'alpine-arm64', 'alpine-x64'].includes(platform)) { throw new Error('Unsupported server platform'); }
-const output = path.join(root, 'tools/phpcode-server', platform, 'package');
-const dependencies = path.join(root, 'tools/phpcode-server', platform, 'node_modules');
-const node = path.join(root, 'tools/phpcode-build', `node-v24.22.1-${platform}`, 'bin/node');
+if (!lock.serverPlatforms.includes(platform)) { throw new Error('Unsupported server platform'); }
+const output = path.join(build, 'servers', platform, 'package');
+const dependencies = path.join(build, 'servers', platform, 'node_modules');
+const node = path.join(build, 'servers', platform, 'node');
 if (!fs.existsSync(node) || !fs.existsSync(dependencies)) { throw new Error('Build the platform Node runtime and isolated remote dependencies first.'); }
 fs.rmSync(output, { recursive: true, force: true }); fs.mkdirSync(output, { recursive: true });
 const filter = file => !file.endsWith('.map') && !/(?:^|[/\\])@github[/\\]copilot[^/\\]*(?:[/\\]|$)/.test(file);
-fs.cpSync(path.join(root, 'phpcode-oss/out-phpcode-server'), path.join(output, 'out'), { recursive: true, filter });
-fs.cpSync(dependencies, path.join(output, 'node_modules'), { recursive: true, filter });
+fs.cpSync(path.join(upstream, 'out-phpcode-server'), path.join(output, 'out'), { recursive: true, verbatimSymlinks: true, filter });
+fs.cpSync(dependencies, path.join(output, 'node_modules'), { recursive: true, verbatimSymlinks: true, filter });
 fs.copyFileSync(node, path.join(output, 'node')); fs.chmodSync(path.join(output, 'node'), 0o755);
-fs.copyFileSync(path.join(path.dirname(path.dirname(node)), 'LICENSE'), path.join(output, 'node.LICENSE'));
-fs.copyFileSync(path.join(root, 'phpcode-oss/LICENSE.txt'), path.join(output, 'LICENSE.txt'));
-const pkg = JSON.parse(fs.readFileSync(path.join(root, 'phpcode-oss/package.json')));
-const product = JSON.parse(fs.readFileSync(path.join(root, 'phpcode-oss/product.json')));
-product.commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: path.join(root, 'phpcode-oss'), encoding: 'utf8' }).trim();
+fs.copyFileSync(path.join(path.dirname(node), 'node.LICENSE'), path.join(output, 'node.LICENSE'));
+fs.copyFileSync(path.join(upstream, 'LICENSE.txt'), path.join(output, 'LICENSE.txt'));
+const pkg = JSON.parse(fs.readFileSync(path.join(upstream, 'package.json')));
+const product = JSON.parse(fs.readFileSync(path.join(upstream, 'product.json')));
+product.commit = git(['rev-parse', 'HEAD']);
 product.version = pkg.version; product.date = new Date().toISOString();
 fs.writeFileSync(path.join(output, 'package.json'), JSON.stringify({ name: 'phpcode-server', version: pkg.version, type: 'module' }));
 fs.writeFileSync(path.join(output, 'product.json'), JSON.stringify(product));
-const extensions = path.join(root, 'phpcode-oss/.build/extensions');
+const extensions = path.join(upstream, '.build/extensions');
 for (const name of fs.readdirSync(extensions)) {
 	if (['copilot', 'vscode-api-tests', 'vscode-test-resolver', 'phpcode-devcontainers'].includes(name)) { continue; }
 	const source = path.join(extensions, name);
-	fs.cpSync(source, path.join(output, 'extensions', name), { recursive: true, filter });
+	fs.cpSync(source, path.join(output, 'extensions', name), { recursive: true, verbatimSymlinks: true, filter });
 }
-const assets = path.join(__dirname, 'devcontainers/assets'); fs.mkdirSync(assets, { recursive: true });
+const assets = path.join(build, 'server-assets'); fs.mkdirSync(assets, { recursive: true });
 const archive = path.join(assets, `phpcode-server-${platform}.tar.gz`);
-execFileSync('tar', ['--no-xattrs', '-czf', archive, '-C', output, '.'], { env: { ...process.env, COPYFILE_DISABLE: '1' } });
+execFileSync('tar', ['-czf', archive, '-C', output, '.'], { env: { ...process.env, COPYFILE_DISABLE: '1' } });
 const manifestFile = path.join(assets, 'servers.json');
 const manifest = fs.existsSync(manifestFile) ? JSON.parse(fs.readFileSync(manifestFile)) : {};
-manifest[platform] = { file: path.basename(archive), sha256: crypto.createHash('sha256').update(fs.readFileSync(archive)).digest('hex'), commit: product.commit, version: pkg.version };
+manifest[platform] = { file: path.basename(archive), sha256: crypto.createHash('sha256').update(fs.readFileSync(archive)).digest('hex'), commit: product.commit, version: pkg.version, sourceSha256: require('./scripts/source-digest.cjs').sourceDigest() };
 fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2) + '\n');
 console.log(JSON.stringify({ platform, file: archive, bytes: fs.statSync(archive).size }));

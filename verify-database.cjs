@@ -7,10 +7,10 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const { createRequire } = require('node:module');
 const { execFileSync } = require('node:child_process');
-const root = path.resolve(__dirname, '../phpcode-oss');
+const root = require('./scripts/lib.cjs').upstream;
 const { _electron } = createRequire(path.join(root, 'package.json'))('playwright');
 const { Database } = require(path.join(root, 'extensions/phpcode-database/database.cjs'));
-const fixture = fs.mkdtempSync('/private/tmp/phpcode-database-'); const profile = path.join(fixture, 'profile'); const project = path.join(fixture, 'project');
+const fixture = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'phpcode-database-')); const profile = path.join(fixture, 'profile'); const project = path.join(fixture, 'project');
 fs.mkdirSync(path.join(profile, 'User'), { recursive: true }); fs.mkdirSync(project);
 fs.writeFileSync(path.join(profile, 'User/settings.json'), JSON.stringify({ 'workbench.startupEditor': 'none' }));
 fs.writeFileSync(path.join(project, 'check.sql'), "SELECT 1 AS first_result; SELECT '<script>unsafe()</script>' AS second_result;\n");
@@ -23,7 +23,7 @@ async function frameWith(page, selector) { for (let n = 0; n < 200; n++) { for (
 async function close() { if (!app) { return; } const current = app; app = undefined; const child = current.process(); let timer; await Promise.race([current.close().catch(() => {}), new Promise(resolve => { timer = setTimeout(() => { if (child.exitCode === null) { child.kill('SIGKILL'); } resolve(); }, 5000); })]); clearTimeout(timer); }
 async function launch() {
 	const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
-	app = await _electron.launch({ executablePath: process.env.PHPCODE_PACKAGED_EXECUTABLE || path.resolve(root, '../VSCode-darwin-arm64/phpcode.app/Contents/MacOS/phpcode'), args: ['--user-data-dir', profile, '--extensions-dir', path.join(fixture, 'extensions'), '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes', project], env, timeout: 60000 });
+	app = await _electron.launch({ executablePath: process.env.PHPCODE_PACKAGED_EXECUTABLE || require('./scripts/lib.cjs').desktop().executable, args: ['--user-data-dir', profile, '--extensions-dir', path.join(fixture, 'extensions'), '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes', project], env, timeout: 60000 });
 	const page = await app.firstWindow(); await page.locator('.monaco-workbench').waitFor({ timeout: 60000 }); return page;
 }
 (async () => {
