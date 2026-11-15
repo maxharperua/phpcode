@@ -86,7 +86,7 @@ jobs:
     timeout-minutes: 120
     env:
       VSCODE_SEQUENTIAL_NATIVE_INSTALLS: '1'
-      NODE_OPTIONS: ${{ matrix.os == 'ubuntu-24.04' && '--max-old-space-size=4096' || '--max-old-space-size=8192' }}
+      NODE_OPTIONS: ${{ matrix.os == 'macos-15' && '--max-old-space-size=8192' || '--max-old-space-size=4096' }}
       GOMEMLIMIT: 1536MiB
     steps:
       - uses: actions/checkout@v4
