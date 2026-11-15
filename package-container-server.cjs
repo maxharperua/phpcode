@@ -29,10 +29,16 @@ fs.writeFileSync(path.join(output, 'package.json'), JSON.stringify({ name: 'phpc
 fs.writeFileSync(path.join(output, 'product.json'), JSON.stringify(product));
 const extensions = path.join(upstream, '.build/extensions');
 for (const name of fs.readdirSync(extensions)) {
-	if (['copilot', 'vscode-api-tests', 'vscode-test-resolver', 'phpcode-devcontainers'].includes(name)) { continue; }
+	if (['copilot', 'vscode-api-tests', 'vscode-test-resolver', 'phpcode-devcontainers', 'microsoft-authentication'].includes(name)) { continue; }
 	const source = path.join(extensions, name);
 	fs.cpSync(source, path.join(output, 'extensions', name), { recursive: true, verbatimSymlinks: true, filter });
 }
+if (!fs.existsSync(path.join(output, 'extensions/git/dist/main.js'))) { throw new Error('Compile native built-in extensions before packaging: the remote Git extension is missing.'); }
+// Git's JS bundle is portable, but its bundled native dependency must match the server,
+// not the desktop host that ran esbuild. Account UI continues to run on the desktop.
+const gitNative = path.join(output, 'extensions/git/node_modules/@vscode/fs-copyfile');
+fs.rmSync(gitNative, { recursive: true, force: true });
+fs.cpSync(path.join(dependencies, '@vscode/fs-copyfile'), gitNative, { recursive: true, verbatimSymlinks: true });
 const assets = path.join(build, 'server-assets'); fs.mkdirSync(assets, { recursive: true });
 const archive = path.join(assets, `phpcode-server-${platform}.tar.gz`);
 execFileSync('tar', ['-czf', archive, '-C', output, '.'], { env: { ...process.env, COPYFILE_DISABLE: '1' } });

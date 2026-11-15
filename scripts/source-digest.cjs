@@ -19,7 +19,7 @@ function sourceDigest() {
 	}
 	for (const name of ['agent', 'agentProvider', 'database', 'database-runtime', 'devcontainers']) { visit(name); }
 	for (const name of fs.readdirSync(repo).filter(name => /^apply-.*\.cjs$/.test(name))) { files.push(name); }
-	files.push('upstream.json', 'product-overrides.json', 'disabled-agent-config.json', 'package.json', 'pnpm-lock.yaml', 'package-container-server.cjs', 'build-container-dependencies.cjs', 'scripts/source-digest.cjs');
+	files.push('upstream.json', 'product-overrides.json', 'disabled-agent-config.json', 'package.json', 'pnpm-lock.yaml', 'package-container-server.cjs', 'build-container-dependencies.cjs', 'scripts/source-digest.cjs', 'scripts/phpcode.cjs');
 	const hash = crypto.createHash('sha256');
 	for (const name of files.sort()) {
 		hash.update(name + '\0');
