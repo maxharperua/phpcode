@@ -90,3 +90,15 @@ corepack pnpm test:database
 Workflow `Build phpcode` запускается на push/PR и вручную: быстрые тесты на трёх ОС, Linux job сборки двух серверов с Docker/QEMU, затем нативные Windows/Linux/macOS jobs. Готовые пакеты скачиваются из artifacts соответствующего run. Workflow не публикует релизы и не подписывает установщики. Настройка workflow сама по себе не является подтверждением успешной сборки на всех платформах: проверяйте фактический статус run.
 
 Основные требования среды сверены с [официальной инструкцией Code OSS](https://github.com/microsoft/vscode/wiki/How-to-Contribute); конкретные версии определяет закреплённое дерево исходников. Передача результатов между CI jobs использует [GitHub Actions artifacts](https://docs.github.com/en/actions/tutorials/store-and-share-data).
+
+## Повторная проверка готовых серверов в CI
+
+Для повторной проверки desktop после изменения Windows/Linux упаковщика можно запустить `Build phpcode` → `Run workflow` и указать `server_run_id` — ID собственного доверенного прогона с успешно загруженным artifact `container-servers`. Тогда длительная серверная job пропускается, а нативные jobs скачивают архивы этого прогона. Поле `desktop_os` позволяет выбрать одну ОС для повторной проверки. Bootstrap и сборка по-прежнему проверяют коммит Code OSS, SHA-256 и digest исходников компонентов. Если компоненты изменились, потребуется новая серверная сборка.
+
+Linux CI перед полной сборкой освобождает место от неиспользуемых Android/.NET/Haskell toolchains на временном GitHub runner. Локальный bootstrap такие каталоги не удаляет. Для обычных Linux/Windows runners bundler ограничен heap Node 4 ГБ и soft limit Go 1536 MiB; Linux job дополнительно создаёт 8 ГБ swap. На собственном Linux-компьютере с небольшим объёмом RAM можно использовать те же `NODE_OPTIONS=--max-old-space-size=4096` и `GOMEMLIMIT=1536MiB` при наличии системного swap. Git-команды bootstrap принудительно используют LF независимо от глобального `core.autocrlf` в Git for Windows; для этого есть переносимый регрессионный тест.
+
+Windows CI ожидает завершения Visual Studio Installer через PowerShell `Start-Process -Wait`. Параметр `--wait` самого Visual Studio разрешён только bootstrapper, а `setup.exe` его не поддерживает; см. [документацию Microsoft](https://learn.microsoft.com/en-us/visualstudio/install/use-command-line-parameters-to-install-visual-studio?view=visualstudio).
+
+## Публикация исполняемых файлов
+
+Workflow `Publish phpcode release` получает ID успешных desktop-прогонов Windows, Linux и macOS и создаёт GitHub Release с установщиками, переносимыми архивами, `SHA256SUMS` и `builds.json`. Перед публикацией проверяются состав платформ, версии Node/Code OSS, размеры и SHA-256 каждого файла. Исполняемые файлы прикрепляются к релизу и не увеличивают историю исходников Git. Для первого выпуска используется версия проекта `v0.1.0`; версия базы редактора остаётся `1.146.0`.

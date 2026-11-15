@@ -8,7 +8,45 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { desktop, lock, repo, run } = require('./lib.cjs');
+const { desktop, lock, repo, run, windowsSdkBin } = require('./lib.cjs');
+const crypto = require('node:crypto');
+
+test('release staging verifies all platform artifacts and refuses altered installers', async () => {
+	const { prepareRelease } = require('./release-assets.cjs');
+	const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'phpcode-release-test-'));
+	try {
+		for (const [platform, target, files] of [
+			['windows', 'win32-x64', ['phpcode.exe', 'phpcode.zip']],
+			['linux', 'linux-x64', ['phpcode.deb', 'phpcode.tar.gz']],
+			['macos', 'darwin-arm64', ['phpcode.dmg']]
+		]) {
+			const folder = path.join(fixture, 'input', platform); fs.mkdirSync(folder, { recursive: true });
+			const artifacts = {};
+			for (const file of files) {
+				const content = `fixture ${file}`; fs.writeFileSync(path.join(folder, file), content);
+				artifacts[file] = { bytes: Buffer.byteLength(content), sha256: crypto.createHash('sha256').update(content).digest('hex') };
+			}
+			fs.writeFileSync(path.join(folder, `build-${target}.json`), JSON.stringify({ target, upstream: lock.commit, node: lock.node, product: 'a'.repeat(40), version: '1.146.0', artifacts }));
+		}
+		assert.equal((await prepareRelease(path.join(fixture, 'input'), path.join(fixture, 'release'))).length, 5);
+		assert.equal(fs.readFileSync(path.join(fixture, 'release/SHA256SUMS'), 'utf8').trim().split('\n').length, 5);
+		fs.appendFileSync(path.join(fixture, 'input/windows/phpcode.exe'), 'tampered');
+		await assert.rejects(prepareRelease(path.join(fixture, 'input'), path.join(fixture, 'invalid')), /checksum mismatch/);
+		assert.equal(fs.existsSync(path.join(fixture, 'invalid')), false);
+	} finally { fs.rmSync(fixture, { recursive: true, force: true }); }
+});
+
+test('Windows SDK discovery selects the newest installed signing tools', () => {
+	const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'phpcode-sdk-test-'));
+	try {
+		for (const version of ['10.0.9999.0', '10.0.26100.0']) {
+			const directory = path.join(fixture, 'Windows Kits/10/bin', version, 'x64');
+			fs.mkdirSync(directory, { recursive: true }); fs.writeFileSync(path.join(directory, 'signtool.exe'), 'fixture');
+		}
+		assert.equal(windowsSdkBin(fixture, 'x64'), path.join(fixture, 'Windows Kits/10/bin/10.0.26100.0/x64'));
+		assert.equal(windowsSdkBin(path.join(fixture, 'absent'), 'x64'), undefined);
+	} finally { fs.rmSync(fixture, { recursive: true, force: true }); }
+});
 
 test('child build scripts use the same Node runtime as the build driver', () => {
 	const actual = run(process.execPath, ['-e', "process.stdout.write(require('node:child_process').execFileSync('node', ['-p', 'process.execPath'], { encoding: 'utf8' }).trim())"], { stdio: ['ignore', 'pipe', 'inherit'], encoding: 'utf8' });

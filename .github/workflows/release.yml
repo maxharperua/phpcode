@@ -1,0 +1,82 @@
+name: Publish phpcode release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, for example v0.1.0'
+        type: string
+        required: true
+      windows_run:
+        description: 'Run containing successful phpcode-Windows-X64 artifacts'
+        type: string
+        required: true
+      linux_run:
+        description: 'Run containing successful phpcode-Linux-X64 artifacts'
+        type: string
+        required: true
+      macos_run:
+        description: 'Run containing successful phpcode-macOS artifacts'
+        type: string
+        required: true
+      prerelease:
+        description: 'Mark as an initial/pre-release build'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@v4
+        with:
+          name: phpcode-Windows-X64
+          run-id: ${{ inputs.windows_run }}
+          github-token: ${{ github.token }}
+          path: dist/artifacts/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: phpcode-Linux-X64
+          run-id: ${{ inputs.linux_run }}
+          github-token: ${{ github.token }}
+          path: dist/artifacts/linux
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: phpcode-macOS-*
+          run-id: ${{ inputs.macos_run }}
+          github-token: ${{ github.token }}
+          merge-multiple: true
+          path: dist/artifacts/macos
+      - name: Verify installers and checksums
+        run: node scripts/release-assets.cjs
+      - name: Publish installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          node -e "if (!/^v[0-9]+\.[0-9]+\.[0-9]+(?:[-.][A-Za-z0-9.-]+)?$/.test(process.env.RELEASE_TAG)) process.exit(1)"
+          cat > release-notes.md <<'NOTES'
+          Готовые сборки phpcode на базе Code OSS 1.146.0.
+
+          Windows: пользовательский установщик .exe и переносимый .zip.
+          Linux x64: пакет .deb и переносимый .tar.gz.
+          macOS: установочный .dmg.
+
+          Пакеты без собственной цифровой подписи и notarization. Контрольные суммы — в SHA256SUMS, сведения об исходниках каждой сборки — в builds.json.
+          NOTES
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" dist/release/* --target "$GITHUB_SHA" --title "phpcode $RELEASE_TAG" --notes-file release-notes.md "${flags[@]}"

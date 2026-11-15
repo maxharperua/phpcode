@@ -26,6 +26,9 @@ function copyMatching(root, suffix) {
 if (process.platform === 'win32') {
 	pnpm(['run', 'gulp', `vscode-${target}-user-setup`], upstream);
 	if (!copyMatching(path.join(upstream, '.build', `win32-${process.arch}`, 'user-setup'), '.exe')) { throw new Error('Windows installer was not produced.'); }
+	const installers = fs.readdirSync(output).filter(file => file.endsWith('.exe'));
+	if (installers.length !== 1) { throw new Error('Expected one Windows user installer.'); }
+	fs.renameSync(path.join(output, installers[0]), path.join(output, `${name}-user-setup.exe`));
 	// A script file and arguments avoid interpolating paths into PowerShell source.
 	run('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', path.join(repo, 'scripts/zip.ps1'), '-Source', directory, '-Destination', path.join(output, `${name}.zip`)]);
 } else if (process.platform === 'linux') {

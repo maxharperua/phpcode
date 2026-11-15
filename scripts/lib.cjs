@@ -10,6 +10,20 @@ const lock = require('../upstream.json');
 const build = path.join(repo, '.build');
 const upstream = path.resolve(process.env.PHPCODE_OSS_PATH || path.join(build, 'code-oss'));
 
+function windowsSdkBin(programFiles, arch = process.arch) {
+	if (!programFiles) { return undefined; }
+	const directory = path.join(programFiles, 'Windows Kits', '10', 'bin');
+	if (!fs.existsSync(directory)) { return undefined; }
+	const versions = fs.readdirSync(directory).filter(name => /^\d+\.\d+/.test(name)).sort((left, right) => right.localeCompare(left, undefined, { numeric: true }));
+	for (const version of versions) {
+		for (const target of [...new Set([arch, 'x64'])]) {
+			const candidate = path.join(directory, version, target);
+			if (fs.existsSync(path.join(candidate, 'signtool.exe'))) { return candidate; }
+		}
+	}
+	return undefined;
+}
+
 function run(command, args = [], options = {}) {
 	// Upstream patch anchors use LF. Git for Windows commonly enables autocrlf globally.
 	if (command === 'git') { args = ['-c', 'core.autocrlf=false', '-c', 'core.eol=lf', ...args]; }
@@ -17,7 +31,8 @@ function run(command, args = [], options = {}) {
 	const pathKey = Object.keys(env).find(key => key.toUpperCase() === 'PATH') || 'PATH';
 	const inheritedPath = env[pathKey] || '';
 	delete env[pathKey];
-	env.PATH = path.dirname(process.execPath) + path.delimiter + inheritedPath;
+	const sdk = process.platform === 'win32' ? windowsSdkBin(env['ProgramFiles(x86)']) : undefined;
+	env.PATH = [path.dirname(process.execPath), sdk, inheritedPath].filter(Boolean).join(path.delimiter);
 	const result = spawnSync(command, args, {
 		cwd: repo, stdio: 'inherit', ...options,
 		env
@@ -63,4 +78,4 @@ function desktop(platform = process.platform, arch = process.arch) {
 	return { target, directory, executable };
 }
 
-module.exports = { repo, build, lock, upstream, run, git, requireNode, pnpm, assertUpstream, desktop };
+module.exports = { repo, build, lock, upstream, run, git, requireNode, pnpm, assertUpstream, desktop, windowsSdkBin };
