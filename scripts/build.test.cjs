@@ -26,6 +26,23 @@ test('pinned toolchain matches root and driver manifests', () => {
 	assert.deepEqual([require('../package.json').packageManager, require('../database-runtime/package.json').packageManager, fs.readFileSync(path.join(repo, '.nvmrc'), 'utf8').trim()], [`pnpm@${lock.pnpm}`, `pnpm@${lock.pnpm}`, lock.node]);
 });
 
+test('upstream checkout keeps LF even when Git enables autocrlf', () => {
+	const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'phpcode-eol-test-'));
+	const invoke = args => {
+		const result = spawnSync('git', args, { cwd: fixture, encoding: 'utf8' });
+		assert.equal(result.status, 0, result.stderr);
+	};
+	try {
+		invoke(['init']); invoke(['config', 'core.autocrlf', 'true']);
+		const file = path.join(fixture, 'source.txt');
+		fs.writeFileSync(file, 'first\nsecond\n'); invoke(['add', 'source.txt']);
+		invoke(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture']);
+		fs.rmSync(file);
+		run('git', ['checkout', '--', 'source.txt'], { cwd: fixture, stdio: 'ignore' });
+		assert.equal(fs.readFileSync(file, 'utf8'), 'first\nsecond\n');
+	} finally { fs.rmSync(fixture, { recursive: true, force: true }); }
+});
+
 test('foreign upstream revision is rejected without modifying the checkout', () => {
 	const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'phpcode-build-test-'));
 	const invoke = args => {

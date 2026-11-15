@@ -11,6 +11,8 @@ const build = path.join(repo, '.build');
 const upstream = path.resolve(process.env.PHPCODE_OSS_PATH || path.join(build, 'code-oss'));
 
 function run(command, args = [], options = {}) {
+	// Upstream patch anchors use LF. Git for Windows commonly enables autocrlf globally.
+	if (command === 'git') { args = ['-c', 'core.autocrlf=false', '-c', 'core.eol=lf', ...args]; }
 	const env = { COREPACK_HOME: path.join(build, 'corepack'), ...process.env, PNPM_CONFIG_FROZEN_LOCKFILE: 'true', ...options.env };
 	const pathKey = Object.keys(env).find(key => key.toUpperCase() === 'PATH') || 'PATH';
 	const inheritedPath = env[pathKey] || '';
