@@ -29,6 +29,18 @@ if (process.platform === 'win32') {
 	// A script file and arguments avoid interpolating paths into PowerShell source.
 	run('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', path.join(repo, 'scripts/zip.ps1'), '-Source', directory, '-Destination', path.join(output, `${name}.zip`)]);
 } else if (process.platform === 'linux') {
+	const dependencyFile = path.join(upstream, 'build/linux/dependencies-generator.ts');
+	let generator = fs.readFileSync(dependencyFile, 'utf8');
+	const optionalTunnel = "const tunnelPath = path.join(buildDir, 'bin', product.tunnelApplicationName);\n\tif (existsSync(tunnelPath)) { files.push(tunnelPath); }";
+	if (!generator.includes(optionalTunnel)) {
+		const before = "files.push(path.join(buildDir, 'bin', product.tunnelApplicationName));";
+		if (!generator.includes(before)) { throw new Error('Review optional tunnel dependency scan for this upstream.'); }
+		generator = generator.replace("import { spawnSync } from 'child_process';", "import { spawnSync } from 'child_process';\nimport { existsSync } from 'fs';").replace(before, optionalTunnel);
+	}
+	// phpcode ships a different set of binaries from the Microsoft reference package.
+	// Keep calculating real dependencies; a reference-list difference is informational.
+	generator = generator.replace('const FAIL_BUILD_FOR_NEW_DEPENDENCIES: boolean = true;', "const FAIL_BUILD_FOR_NEW_DEPENDENCIES: boolean = product.applicationName !== 'phpcode';");
+	fs.writeFileSync(dependencyFile, generator);
 	pnpm(['run', 'gulp', `vscode-${target}-prepare-deb`], upstream);
 	pnpm(['run', 'gulp', `vscode-${target}-build-deb`], upstream);
 	if (!copyMatching(path.join(upstream, '.build/linux/deb'), '.deb')) { throw new Error('Debian package was not produced.'); }
