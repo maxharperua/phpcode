@@ -37,6 +37,11 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - uses: actions/checkout@v4
+      - name: Free Linux runner storage
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          docker image prune --all --force
+          df -h /
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -71,6 +76,12 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - uses: actions/checkout@v4
+      - name: Free Linux runner storage
+        if: runner.os == 'Linux'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          docker image prune --all --force
+          df -h /
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
