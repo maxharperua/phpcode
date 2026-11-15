@@ -41,7 +41,7 @@ jobs:
         with:
           node-version-file: .nvmrc
       - name: Install native build prerequisites
-        run: sudo apt-get update && sudo apt-get install -y build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3
+        run: sudo apt-get update && sudo apt-get install -y build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3 python3-setuptools
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
@@ -76,7 +76,7 @@ jobs:
           node-version-file: .nvmrc
       - name: Install Linux prerequisites
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3 fakeroot rpm
+        run: sudo apt-get update && sudo apt-get install -y build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3 python3-setuptools fakeroot rpm
       - name: Install Windows native build components
         if: runner.os == 'Windows'
         shell: pwsh

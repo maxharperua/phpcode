@@ -14,7 +14,8 @@ const dependencies = path.join(build, 'servers', platform, 'node_modules');
 const node = path.join(build, 'servers', platform, 'node');
 if (!fs.existsSync(node) || !fs.existsSync(dependencies)) { throw new Error('Build the platform Node runtime and isolated remote dependencies first.'); }
 fs.rmSync(output, { recursive: true, force: true }); fs.mkdirSync(output, { recursive: true });
-const filter = file => !file.endsWith('.map') && !/(?:^|[/\\])@github[/\\]copilot[^/\\]*(?:[/\\]|$)/.test(file);
+// pnpm links this install-only workspace to remote/web, which is outside the packaged tree.
+const filter = file => file !== path.join(dependencies, 'vscode-web') && !file.endsWith('.map') && !/(?:^|[/\\])@github[/\\]copilot[^/\\]*(?:[/\\]|$)/.test(file);
 fs.cpSync(path.join(upstream, 'out-phpcode-server'), path.join(output, 'out'), { recursive: true, verbatimSymlinks: true, filter });
 fs.cpSync(dependencies, path.join(output, 'node_modules'), { recursive: true, verbatimSymlinks: true, filter });
 fs.copyFileSync(node, path.join(output, 'node')); fs.chmodSync(path.join(output, 'node'), 0o755);
