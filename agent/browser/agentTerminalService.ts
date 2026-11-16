@@ -98,8 +98,12 @@ export class PhpcodeAgentTerminalService extends Disposable {
 			const operatingSystem = remote?.os ?? OS;
 			const shell = await this.profiles.getDefaultShell({ remoteAuthority: cwd.scheme === 'vscode-remote' ? cwd.authority : undefined, os: operatingSystem });
 			if (controller.signal.aborted) { record.state = 'cancelled'; return 'Command cancelled before launch.'; }
-			const args = operatingSystem === OperatingSystem.Windows ? (/cmd(?:\.exe)?$/i.test(shell) ? ['/d', '/c', command] : ['-NoProfile', '-Command', command]) : ['-lc', command];
-			const terminal = await this.terminals.createTerminal({ config: { name: 'phpcode Agent', executable: shell, args, hideFromUser: true, isFeatureTerminal: true, isTransient: true, waitOnExit: false }, cwd });
+			const args = operatingSystem === OperatingSystem.Windows ? (/cmd(?:\.exe)?$/i.test(shell) ? ['/d', '/c', command] : ['-NoProfile', '-NonInteractive', '-Command', command]) : ['-lc', command];
+			// These PTYs have no user input surface. Git otherwise sees a TTY and opens
+			// its pager, waiting forever at (END). Scope overrides to agent processes,
+			// including remote/container shells, without changing user terminal settings.
+			const env = { GIT_PAGER: 'cat', PAGER: 'cat', MANPAGER: 'cat', SYSTEMD_PAGER: 'cat', GIT_TERMINAL_PROMPT: '0' };
+			const terminal = await this.terminals.createTerminal({ config: { name: 'phpcode Agent', executable: shell, args, env, hideFromUser: true, isFeatureTerminal: true, isTransient: true, waitOnExit: false }, cwd });
 			return await new Promise<string>(resolve => {
 				const store = new DisposableStore(); let done = false; let raw = '';
 				const finish = (state: AgentCommandRecord['state'], code?: number) => {

@@ -1,0 +1,11 @@
+# phpcode application icon
+
+Approved design: an original PHP-inspired elephant whose open ear suggests an AI conversation bubble, in indigo/lavender with a mint accent on a graphite rounded tile. Generated with the built-in `imagegen` tool; existing PHP, ChatGPT and Cursor logos were not copied.
+
+`phpcode-master.png` is the original transparent image. `phpcode.png` is the normalized 1024px asset; `phpcode.icns` and `phpcode.ico` are prepared native application icons. Windows tile PNGs are included. `apply-product.cjs` copies the assets into Code OSS resources on every supported platform. Normal builds do not require image-conversion tools.
+
+To regenerate the native formats on macOS: `node scripts/prepare-icons.cjs`. It resizes the approved original with `sips`, packages ICNS using `iconutil` and packages the Windows PNG frames in an ICO container. The original is preserved.
+
+## Final generation prompt
+
+Use case: logo-brand. Asset type: a finished 1024px desktop application icon for phpcode, a PHP IDE with AI chat and coding agents. Design direction from user: the spirit of PHP combined with the calm minimal geometry of premium AI chat/coding apps such as ChatGPT or Cursor. Invent an ORIGINAL emblem, do not reproduce their logos. Centerpiece: a beautifully simple, immediately recognizable PHP-inspired ELEPHANT HEAD, one ear and curved trunk, distilled into a compact continuous sculptural ribbon / interlocking rounded geometry. The open ear or trunk curve subtly suggests an AI conversation bubble / continuous thought loop. Make the elephant clear, not a knot that loses its animal silhouette. Friendly, clever, sophisticated, not cartoonish, no eyes or facial details needed. Strong simple silhouette readable at 24px. PHP indigo-lavender (#777bb3 / #bd93f9) with one restrained pale mint highlight, mainly two-tone, softly beveled satin material, not toy plastic. Dark near-black graphite rounded-square app tile (#20212b) with quiet depth. Frontal orthographic app icon, perfectly centered, generous breathing room, tile fills about 84% of square canvas, outside tile truly transparent alpha. No literal ChatGPT/OpenAI knot, no Cursor cube, no bats, no wings, no code brackets, no words or letters, no decorative sparkles, no big glow, no presentation background. Icon only.

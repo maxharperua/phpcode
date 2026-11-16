@@ -8,7 +8,7 @@
 .phpcode-agent-tab > button:first-child { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .phpcode-agent-button { border:0; background:transparent; color:var(--vscode-foreground); cursor:pointer; border-radius:var(--vscode-cornerRadius-small,4px); padding:6px 8px; font:inherit; white-space:nowrap; }
 .phpcode-agent-button:hover { background:var(--vscode-toolbar-hoverBackground); }
-.phpcode-agent-button:focus-visible,.phpcode-agent textarea:focus-visible,.phpcode-agent input:focus-visible,.phpcode-agent select:focus-visible { outline:1px solid var(--vscode-focusBorder); outline-offset:-1px; }
+.phpcode-agent-button:focus-visible,.phpcode-agent input:focus-visible,.phpcode-agent select:focus-visible { outline:1px solid var(--vscode-focusBorder); outline-offset:-1px; }
 .phpcode-agent-button:disabled { opacity:.5; cursor:default; }
 .phpcode-agent-transcript { flex:1; min-height:80px; overflow:auto; padding:12px 16px; overscroll-behavior:contain; }
 .phpcode-agent-empty { display:flex; flex-direction:column; align-items:flex-start; gap:8px; max-width:440px; margin:32px auto; }
@@ -28,16 +28,18 @@
 .phpcode-agent-change > span { flex:1; min-width:100px; overflow:hidden; text-overflow:ellipsis; }
 .phpcode-agent .apply-change,.phpcode-agent .approve-command,.phpcode-agent .send { color:var(--vscode-button-foreground); background:var(--vscode-button-background); }
 .phpcode-agent .apply-change:hover,.phpcode-agent .send:hover { background:var(--vscode-button-hoverBackground); }
-.phpcode-agent-composer { border:1px solid var(--vscode-input-border,var(--vscode-widget-border)); border-radius:var(--vscode-cornerRadius-medium,8px); margin:12px; background:var(--vscode-input-background); }
-.phpcode-agent textarea { border:0; background:transparent; color:var(--vscode-input-foreground); width:100%; box-sizing:border-box; resize:vertical; min-height:72px; max-height:240px; font:inherit; padding:12px; line-height:1.5; }
-.phpcode-agent-controls { flex-wrap:wrap; }
+.phpcode-agent-composer { border:1px solid var(--vscode-input-border,var(--vscode-widget-border)); border-radius:12px; margin:0 10px 4px; background:var(--vscode-input-background); flex-shrink:0; transition:border-color 120ms ease; }
+.phpcode-agent-composer:focus-within { border-color:var(--vscode-focusBorder); }
+.phpcode-agent textarea,.phpcode-agent textarea:focus,.phpcode-agent textarea:focus-visible { display:block; outline:none !important; box-shadow:none; border:0; background:transparent; color:var(--vscode-input-foreground); width:100%; box-sizing:border-box; resize:none; min-height:60px; max-height:200px; font:inherit; padding:10px 12px 6px; line-height:1.5; }
+.phpcode-agent textarea::placeholder { color:var(--vscode-input-placeholderForeground); }
+.phpcode-agent-controls { flex-wrap:nowrap; padding:4px 8px 8px; gap:4px; }
 .phpcode-agent select { color:var(--vscode-dropdown-foreground); background:var(--vscode-dropdown-background); border:0; font:inherit; padding:6px; border-radius:var(--vscode-cornerRadius-small,4px); }
-.phpcode-agent .model-picker { max-width:200px; overflow:hidden; text-overflow:ellipsis; color:var(--vscode-descriptionForeground); }
+.phpcode-agent .model-picker { flex:1; min-width:32px; max-width:none; overflow:hidden; text-overflow:ellipsis; color:var(--vscode-descriptionForeground); padding:4px 6px; text-align:left; font-size:11px; }
 .phpcode-agent .send { margin-left:auto; }
 .phpcode-agent-contexts { display:flex; flex-wrap:wrap; padding:4px 8px 0; }
 .phpcode-agent-contexts:empty { display:none; }
 .phpcode-agent-contexts button { font-size:12px; color:var(--vscode-textLink-foreground); }
-.phpcode-agent-status { color:var(--vscode-descriptionForeground); font-size:11px; padding:4px 12px 8px; min-height:16px; }
+.phpcode-agent-status { color:var(--vscode-descriptionForeground); font-size:10px; padding:0 12px 8px; min-height:12px; }
 .phpcode-agent-settings,.phpcode-agent-history,.phpcode-agent-approval { margin:8px 12px; padding:12px; background:var(--vscode-editorWidget-background); border:1px solid var(--vscode-widget-border); border-radius:var(--vscode-cornerRadius-medium,8px); }
 .phpcode-agent-settings p { margin-top:8px; color:var(--vscode-descriptionForeground); font-size:12px; line-height:1.5; }
 .phpcode-agent input { box-sizing:border-box; width:100%; background:var(--vscode-input-background); border:1px solid var(--vscode-input-border,transparent); color:var(--vscode-input-foreground); padding:8px; font:inherit; margin:8px 0; }
@@ -49,24 +51,20 @@
 @media (prefers-reduced-motion:no-preference) { .phpcode-agent-transcript { scroll-behavior:smooth; } }
 
 .phpcode-agent-cache { display:flex; align-items:center; gap:8px; margin-top:8px; }
-.phpcode-agent input[type=checkbox] { width:auto; margin:0; }
+.phpcode-agent input[type=checkbox] { width:auto; margin:0; accent-color:var(--vscode-button-background); }
 .phpcode-agent-usage { color:var(--vscode-descriptionForeground); font-size:11px; padding:0 12px 8px; line-height:1.5; }
 
 .phpcode-agent-index-details { margin:8px 12px; padding:12px; border:1px solid var(--vscode-widget-border); background:var(--vscode-editorWidget-background); border-radius:var(--vscode-cornerRadius-medium,8px); font-size:12px; line-height:1.5; }
 .phpcode-agent-index-details strong { display:block; margin-bottom:8px; }
 .phpcode-agent .index-status { font-size:11px; color:var(--vscode-descriptionForeground); margin:0 4px 4px; }
 /* Compact composer and disclosure surfaces follow the editor theme. */
-.phpcode-agent-composer { margin:0 12px 4px; border-radius:var(--vscode-cornerRadius-medium,8px); flex-shrink:0; }
-.phpcode-agent textarea { min-height:64px; max-height:200px; resize:none; }
-.phpcode-agent-controls { flex-wrap:nowrap; padding:4px 8px 8px; gap:4px; }
-.phpcode-agent .phpcode-agent-mode { width:76px; flex-shrink:0; border-radius:16px; padding:4px 8px; }
-.phpcode-agent .model-picker { flex:1; min-width:32px; max-width:none; padding:4px; text-align:left; }
+.phpcode-agent .phpcode-agent-mode { flex:0 1 148px; width:148px; min-width:76px; max-width:45%; text-overflow:ellipsis; font-size:11px; border-radius:6px; padding:5px 6px; background:transparent; }
+.phpcode-agent .phpcode-agent-mode:hover { background:var(--vscode-toolbar-hoverBackground); }
 .phpcode-agent .phpcode-agent-apply-mode { flex:0 0 68px; width:68px; font-size:11px; padding:4px; }
 .phpcode-agent .add-context,.phpcode-agent .send { display:flex; align-items:center; justify-content:center; flex:0 0 28px; height:28px; padding:4px; margin:0; }
 .phpcode-agent .codicon { font-size:16px; }
 .phpcode-agent .send { border-radius:50%; }
-.phpcode-agent-status { font-size:10px; min-height:12px; padding:0 12px 6px; }
-.phpcode-agent-metadata { display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:0 12px 8px; flex-shrink:0; color:var(--vscode-descriptionForeground); }
+.phpcode-agent-metadata { display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:0 10px 6px; flex-shrink:0; color:var(--vscode-descriptionForeground); }
 .phpcode-agent-metadata .phpcode-agent-button { font-size:10px; padding:2px 4px; margin:0; }
 .phpcode-agent-usage-details { font-size:10px; }
 .phpcode-agent-usage-details summary { cursor:pointer; }
@@ -85,14 +83,51 @@
 .phpcode-agent-processes .assistant { font-size:12px; }
 .phpcode-agent-composer.drop-target { outline:2px solid var(--vscode-focusBorder); background:var(--vscode-list-dropBackground); }
 
-.phpcode-agent .phpcode-agent-mode { width:116px; font-size:11px; }
-
 .phpcode-agent-status:empty { display:none; }
-.phpcode-agent-changes { border-color:var(--vscode-input-border,var(--vscode-panel-border)); }
 .phpcode-agent-changes { border:1px solid var(--vscode-input-border,var(--vscode-panel-border,var(--vscode-editorGroup-border))); }
 .phpcode-agent-change > span { min-width:0; }
 
-.phpcode-agent .phpcode-agent-mode { flex:0 1 148px; width:148px; min-width:80px; max-width:45%; text-overflow:ellipsis; }
-
 .phpcode-agent-file-link { color:var(--vscode-textLink-foreground); cursor:pointer; text-decoration:none; }
 .phpcode-agent-file-link:hover { text-decoration:underline; }
+
+/* Activity stays visible when disclosures are closed or the model awaits a response. */
+.phpcode-agent-spinner { display:inline-block; box-sizing:border-box; width:12px; height:12px; min-width:12px; flex:0 0 12px; border:1.5px solid var(--vscode-descriptionForeground); border-top-color:var(--vscode-progressBar-background,var(--vscode-textLink-foreground)); border-right-color:var(--vscode-progressBar-background,var(--vscode-textLink-foreground)); border-radius:50%; vertical-align:middle; animation:phpcode-agent-spin 900ms linear infinite; }
+@keyframes phpcode-agent-spin { to { transform:rotate(360deg); } }
+.phpcode-agent-tab .is-working { display:flex; align-items:center; gap:6px; min-width:0; }
+.phpcode-agent-status { display:flex; align-items:center; gap:6px; }
+.phpcode-agent-process-summary,.phpcode-agent-subagent-summary,.phpcode-agent-tool-summary { display:flex; align-items:center; gap:6px; min-width:0; list-style:none; }
+.phpcode-agent-process-summary::-webkit-details-marker,.phpcode-agent-subagent-summary::-webkit-details-marker { display:none; }
+.phpcode-agent-process-summary::before,.phpcode-agent-subagent-summary::before { content:'›'; display:inline-block; flex:0 0 8px; color:var(--vscode-descriptionForeground); }
+.phpcode-agent-processes[open] > .phpcode-agent-process-summary::before,.phpcode-agent-subagent[open] > .phpcode-agent-subagent-summary::before { transform:rotate(90deg); }
+.phpcode-agent-process-label,.phpcode-agent-subagent-name,.phpcode-agent-tool-summary > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.phpcode-agent-process-label,.phpcode-agent-subagent-name { flex:1; }
+.phpcode-agent-elapsed { flex:0 0 auto; color:var(--vscode-descriptionForeground); font-size:10px; font-variant-numeric:tabular-nums; }
+.phpcode-agent-process-wait { margin:6px 0 4px 14px; color:var(--vscode-descriptionForeground); font-size:11px; }
+.phpcode-agent-entry.subagent { margin:6px 0; font-size:12px; }
+.phpcode-agent-subagent { border:1px solid var(--vscode-widget-border,var(--vscode-panel-border)); border-radius:6px; background:var(--vscode-editorWidget-background); }
+.phpcode-agent-subagent-summary { padding:6px 8px; }
+.phpcode-agent-subagent-name { color:var(--vscode-foreground); }
+.phpcode-agent-subagent-status { flex:0 0 auto; font-size:10px; color:var(--vscode-descriptionForeground); }
+.phpcode-agent-subagent[data-status=running] > summary .phpcode-agent-subagent-status { color:var(--vscode-textLink-foreground); }
+.phpcode-agent-subagent[data-status=error] { border-color:var(--vscode-inputValidation-errorBorder,var(--vscode-errorForeground)); }
+.phpcode-agent-subagent[data-status=error] > summary .phpcode-agent-subagent-status,.phpcode-agent-entry[data-state=error] .phpcode-agent-state-icon { color:var(--vscode-errorForeground); }
+.phpcode-agent-subagent[data-status=cancelled] > summary { opacity:.8; }
+.phpcode-agent-subagent-body { padding:0 10px 4px 14px; }
+.phpcode-agent-subagent-meta { color:var(--vscode-descriptionForeground); font-size:10px; margin:2px 0 10px; overflow-wrap:anywhere; }
+.phpcode-agent-subagent-body > .phpcode-agent-entry { margin-bottom:8px; }
+.phpcode-agent-subagent-body > .phpcode-agent-entry.assistant { color:var(--vscode-foreground); }
+.phpcode-agent-state-icon { flex:0 0 12px; text-align:center; }
+@media (prefers-reduced-motion:reduce) { .phpcode-agent-spinner { animation:none; border-style:dotted; } }
+
+.phpcode-agent-provider-label { display:flex; align-items:center; gap:8px; margin:8px 0; }
+.phpcode-agent-provider-label select { flex:1; min-width:0; }
+
+/* Keep message layout stable while revealing secondary actions on hover or keyboard focus. */
+.phpcode-agent .icon-button { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; min-width:26px; padding:4px; flex:0 0 26px; }
+.phpcode-agent .icon-button .codicon { font-size:15px; }
+.phpcode-agent-message-footer { display:flex; align-items:center; gap:8px; min-height:26px; margin-top:4px; opacity:0; pointer-events:none; transition:opacity 120ms ease; color:var(--vscode-descriptionForeground); }
+.phpcode-agent-entry.assistant:hover > .phpcode-agent-message-footer,.phpcode-agent-entry.assistant:focus-within > .phpcode-agent-message-footer { opacity:1; pointer-events:auto; }
+.phpcode-agent-message-footer .copy-answer { color:var(--vscode-descriptionForeground); }
+.phpcode-agent-message-time { margin-left:auto; font-size:10px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.phpcode-agent-entry.assistant > .rendered-markdown > :last-child { margin-bottom:0; }
+@media (prefers-reduced-motion:reduce) { .phpcode-agent-message-footer { transition:none; } }

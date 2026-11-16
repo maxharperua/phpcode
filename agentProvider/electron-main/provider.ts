@@ -8,7 +8,7 @@ import { Disposable, DisposableMap } from '../../../base/common/lifecycle.js';
 import { IServerChannel } from '../../../base/parts/ipc/common/ipc.js';
 import { IPhpcodeProviderService, IPhpcodeProviderStreamEvent, PhpcodeProviderErrorCode, PhpcodeProviderModel } from '../common/provider.js';
 
-const baseUrl = 'https://openai.bothub.chat/v1';
+import { isPhpcodeProviderId, PHPCODE_PROVIDERS, PhpcodeProviderId } from '../common/providerProfiles.js';
 const maxResponseBytes = 4 * 1024 * 1024;
 const maxRequestBytes = 8 * 1024 * 1024;
 
@@ -29,7 +29,7 @@ function validKey(key: string): boolean {
 	return typeof key === 'string' && key.length > 0 && key.length <= 8192 && !/[\r\n]/.test(key);
 }
 
-/** Streams BotHub responses from the native process without exposing Node APIs to the view. */
+/** Streams provider responses from the native process without exposing Node APIs to the view. */
 export class PhpcodeProviderMainService extends Disposable implements IPhpcodeProviderService {
 	declare readonly _serviceBrand: undefined;
 
@@ -41,11 +41,11 @@ export class PhpcodeProviderMainService extends Disposable implements IPhpcodePr
 		super();
 	}
 
-	async start(requestId: string, key: string, body: string): Promise<void> {
+	async start(requestId: string, key: string, body: string, providerId: PhpcodeProviderId = 'bothub'): Promise<void> {
 		if (typeof requestId !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(requestId) || this.pending.has(requestId)) {
 			throw new Error('invalid_request');
 		}
-		if (!validKey(key) || typeof body !== 'string' || Buffer.byteLength(body, 'utf8') > maxRequestBytes || this.pending.size >= 8) {
+		if (!isPhpcodeProviderId(providerId) || !validKey(key) || typeof body !== 'string' || Buffer.byteLength(body, 'utf8') > maxRequestBytes || this.pending.size >= 8) {
 			this.streamEmitter.fire({ requestId, kind: 'error', code: 'invalid_request' });
 			return;
 		}
@@ -53,18 +53,18 @@ export class PhpcodeProviderMainService extends Disposable implements IPhpcodePr
 		this.pending.set(requestId, request);
 		// Subscription is established by the consumer before start; this call does not
 		// wait for response headers or completion of the stream.
-		void this.pump(requestId, key, body, request);
+		void this.pump(requestId, key, body, request, providerId);
 	}
 
 	async cancel(requestId: string): Promise<void> {
 		this.pending.get(requestId)?.controller.abort();
 	}
 
-	private async pump(requestId: string, key: string, body: string, request: PendingRequest): Promise<void> {
+	private async pump(requestId: string, key: string, body: string, request: PendingRequest, providerId: PhpcodeProviderId): Promise<void> {
 		const timeout = setTimeout(() => { request.timedOut = true; request.controller.abort(); }, 120000);
 		let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
 		try {
-			const response = await this.fetcher(`${baseUrl}/chat/completions`, {
+			const response = await this.fetcher(`${PHPCODE_PROVIDERS[providerId].baseUrl}/chat/completions`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
 				body,
@@ -112,15 +112,17 @@ export class PhpcodeProviderMainService extends Disposable implements IPhpcodePr
 		}
 	}
 
-	async models(key: string): Promise<PhpcodeProviderModel[]> {
-		if (!validKey(key)) { throw new Error('authentication'); }
+	async models(key: string, providerId: PhpcodeProviderId = 'bothub'): Promise<PhpcodeProviderModel[]> {
+		if (!isPhpcodeProviderId(providerId)) { throw new Error('invalid_request'); }
+		const profile = PHPCODE_PROVIDERS[providerId];
+		if (profile.modelsRequireKey && !validKey(key)) { throw new Error('authentication'); }
 		const controller = new AbortController();
 		let timedOut = false;
 		const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
 		let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
 		try {
-			const response = await this.fetcher(`${baseUrl}/models`, {
-				headers: { 'Authorization': `Bearer ${key}` },
+			const response = await this.fetcher(profile.baseUrl + profile.modelsPath, {
+				headers: profile.modelsRequireKey ? { 'Authorization': `Bearer ${key}` } : {},
 				signal: controller.signal,
 				redirect: 'error'
 			});
@@ -206,16 +208,16 @@ export class PhpcodeProviderChannel extends Disposable implements IServerChannel
 		let result: PhpcodeProviderModel[] | void;
 		switch (command) {
 			case 'start':
-				if (args.length !== 3) { throw new Error('invalid_request'); }
-				result = await this.instance(context).start(args[0], args[1], args[2]);
+				if ((args.length !== 3 && args.length !== 4) || (args.length === 4 && !isPhpcodeProviderId(args[3]))) { throw new Error('invalid_request'); }
+				result = await this.instance(context).start(args[0], args[1], args[2], args[3] as PhpcodeProviderId | undefined);
 				break;
 			case 'cancel':
 				if (args.length !== 1) { throw new Error('invalid_request'); }
 				result = await this.instance(context).cancel(args[0]);
 				break;
 			case 'models':
-				if (args.length !== 1) { throw new Error('invalid_request'); }
-				result = await this.instance(context).models(args[0]);
+				if ((args.length !== 1 && args.length !== 2) || (args.length === 2 && !isPhpcodeProviderId(args[1]))) { throw new Error('invalid_request'); }
+				result = await this.instance(context).models(args[0], args[1] as PhpcodeProviderId | undefined);
 				break;
 			default: throw new Error('invalid_request');
 		}

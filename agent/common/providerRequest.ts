@@ -46,7 +46,7 @@ function copyTool(tool: AgentToolDefinition): AgentToolDefinition {
 	};
 }
 
-/** Add BotHub's explicit Claude breakpoints while leaving automatic caching to other providers. */
+/** Add supported explicit Claude breakpoints while leaving automatic caching to other providers. */
 export function buildProviderRequest(request: AgentRequest, cache: 'auto' | 'off'): ProviderRequest {
 	const useBreakpoints = cache === 'auto' && /(?:^|\/)claude(?:-|$)/i.test(request.model.trim());
 	const systemIndex = useBreakpoints ? request.messages.findIndex(message => message.role === 'system' && !!message.content?.trim()) : -1;

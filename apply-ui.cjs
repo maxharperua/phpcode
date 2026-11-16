@@ -3,47 +3,7 @@ const path = require('node:path');
 const root = path.resolve(process.argv[2] || require('./scripts/lib.cjs').upstream);
 const writeJson = (file, value) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify(value, null, '\t') + '\n'); };
 const themeRoot = path.join(root, 'extensions/theme-defaults');
-const colors = {
-	'foreground': '#f8f8f2', 'focusBorder': '#bd93f9', 'descriptionForeground': '#a4abc4',
-	'editor.background': '#282a36', 'editor.foreground': '#f8f8f2', 'editorCursor.foreground': '#f8f8f2',
-	'editor.selectionBackground': '#44475a', 'editor.lineHighlightBackground': '#44475a60',
-	'editorLineNumber.foreground': '#6272a4', 'editorLineNumber.activeForeground': '#f8f8f2',
-	'editorIndentGuide.background1': '#44475a', 'editorIndentGuide.activeBackground1': '#6272a4',
-	'activityBar.background': '#21222c', 'activityBar.foreground': '#f8f8f2', 'activityBar.activeBorder': '#bd93f9',
-	'sideBar.background': '#21222c', 'sideBar.foreground': '#f8f8f2', 'sideBarSectionHeader.background': '#282a36',
-	'list.activeSelectionBackground': '#44475a', 'list.activeSelectionForeground': '#f8f8f2',
-	'list.inactiveSelectionBackground': '#44475a90', 'list.hoverBackground': '#44475a60', 'list.focusOutline': '#bd93f9',
-	'editorGroupHeader.tabsBackground': '#21222c', 'tab.activeBackground': '#282a36', 'tab.inactiveBackground': '#21222c',
-	'tab.activeBorderTop': '#bd93f9', 'tab.activeForeground': '#f8f8f2', 'tab.inactiveForeground': '#a4abc4',
-	'titleBar.activeBackground': '#21222c', 'titleBar.activeForeground': '#f8f8f2', 'titleBar.inactiveBackground': '#21222c',
-	'statusBar.background': '#21222c', 'statusBar.foreground': '#f8f8f2', 'statusBar.noFolderBackground': '#21222c',
-	'panel.background': '#282a36', 'panel.border': '#44475a', 'panelTitle.activeBorder': '#bd93f9',
-	'input.background': '#282a36', 'input.foreground': '#f8f8f2', 'input.border': '#44475a',
-	'button.background': '#bd93f9', 'button.foreground': '#21222c', 'button.hoverBackground': '#caa6ff',
-	'badge.background': '#bd93f9', 'badge.foreground': '#21222c', 'progressBar.background': '#bd93f9',
-	'editorWidget.background': '#21222c', 'editorWidget.border': '#44475a', 'dropdown.background': '#282a36',
-	'peekViewEditor.background': '#21222c', 'peekViewResult.background': '#21222c',
-	'terminal.background': '#282a36', 'terminal.foreground': '#f8f8f2', 'terminalCursor.foreground': '#f8f8f2',
-	'terminal.ansiBlack': '#21222c', 'terminal.ansiRed': '#ff5555', 'terminal.ansiGreen': '#50fa7b',
-	'terminal.ansiYellow': '#f1fa8c', 'terminal.ansiBlue': '#bd93f9', 'terminal.ansiMagenta': '#ff79c6',
-	'terminal.ansiCyan': '#8be9fd', 'terminal.ansiWhite': '#f8f8f2', 'terminal.ansiBrightBlack': '#6272a4',
-	'terminal.ansiBrightRed': '#ff6e6e', 'terminal.ansiBrightGreen': '#69ff94', 'terminal.ansiBrightYellow': '#ffffa5',
-	'terminal.ansiBrightBlue': '#d6acff', 'terminal.ansiBrightMagenta': '#ff92df', 'terminal.ansiBrightCyan': '#a4ffff', 'terminal.ansiBrightWhite': '#ffffff'
-};
-writeJson(path.join(themeRoot, 'themes/phpcode-dracula.json'), {
-	name: 'phpcode Dracula', type: 'dark', colors,
-	tokenColors: [
-		{ scope: ['comment', 'punctuation.definition.comment'], settings: { foreground: '#6272a4', fontStyle: 'italic' } },
-		{ scope: ['keyword', 'storage.type', 'storage.modifier'], settings: { foreground: '#ff79c6' } },
-		{ scope: ['string'], settings: { foreground: '#f1fa8c' } },
-		{ scope: ['constant.numeric', 'constant.language'], settings: { foreground: '#bd93f9' } },
-		{ scope: ['entity.name.function', 'support.function'], settings: { foreground: '#50fa7b' } },
-		{ scope: ['entity.name.type', 'support.type', 'support.class'], settings: { foreground: '#8be9fd' } },
-		{ scope: ['variable.parameter'], settings: { foreground: '#ffb86c' } },
-		{ scope: ['entity.name.tag'], settings: { foreground: '#ff79c6' } },
-		{ scope: ['entity.other.attribute-name'], settings: { foreground: '#50fa7b' } }
-	], semanticHighlighting: true
-});
+writeJson(path.join(themeRoot, 'themes/phpcode-marsh.json'), JSON.parse(fs.readFileSync(path.join(__dirname, 'resources/themes/phpcode-marsh.json'), 'utf8')));
 const iconsDir = path.join(themeRoot, 'icons/phpcode');
 fs.mkdirSync(iconsDir, { recursive: true });
 const definitions = {};
@@ -71,8 +31,8 @@ writeJson(path.join(themeRoot, 'icons/phpcode-icons.json'), {
 });
 const manifestFile = path.join(themeRoot, 'package.json');
 const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
-manifest.contributes.themes = manifest.contributes.themes.filter(theme => theme.id !== 'phpcode Dracula');
-manifest.contributes.themes.push({ id: 'phpcode Dracula', label: 'phpcode Dracula', uiTheme: 'vs-dark', path: './themes/phpcode-dracula.json' });
+manifest.contributes.themes = manifest.contributes.themes.filter(theme => !['phpcode Dracula', 'phpcode Marsh'].includes(theme.id));
+manifest.contributes.themes.push({ id: 'phpcode Marsh', label: 'phpcode Marsh', uiTheme: 'vs-dark', path: './themes/phpcode-marsh.json' });
 manifest.contributes.iconThemes = [...(manifest.contributes.iconThemes || []).filter(theme => theme.id !== 'phpcode-icons'), { id: 'phpcode-icons', label: 'phpcode Project Icons', path: './icons/phpcode-icons.json' }];
 writeJson(manifestFile, manifest);
 const contribution = path.join(root, 'src/vs/workbench/contrib/phpcode/browser/phpcode.contribution.ts');
@@ -85,13 +45,21 @@ fs.writeFileSync(contribution, `/*----------------------------------------------
 import { Registry } from '../../../../platform/registry/common/platform.js';
 import { Extensions, IConfigurationRegistry } from '../../../../platform/configuration/common/configurationRegistry.js';
 import { Extensions as ViewExtensions, IViewContainersRegistry, IViewsRegistry } from '../../../common/views.js';
+import { Extensions as MigrationExtensions, IConfigurationMigrationRegistry } from '../../../common/configuration.js';
+
+Registry.as<IConfigurationMigrationRegistry>(MigrationExtensions.ConfigurationMigration).registerConfigurationMigrations(
+	['workbench.colorTheme', 'workbench.preferredDarkColorTheme'].map(key => ({
+		key, includeApplication: true,
+		migrateFn: value => value === 'phpcode Dracula' ? { value: 'phpcode Marsh' } : []
+	}))
+);
 
 // Product defaults remain overridable in the user's settings.json.
 Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerDefaultConfigurations([{
 	source: 'phpcode',
 	overrides: {
-		'workbench.colorTheme': 'phpcode Dracula',
-		'workbench.preferredDarkColorTheme': 'phpcode Dracula',
+		'workbench.colorTheme': 'phpcode Marsh',
+		'workbench.preferredDarkColorTheme': 'phpcode Marsh',
 		'workbench.iconTheme': 'phpcode-icons',
 		'workbench.editor.showTabs': 'multiple',
 		'workbench.editor.enablePreview': false,
@@ -125,4 +93,22 @@ const mainFile = path.join(root, 'src/vs/workbench/workbench.common.main.ts');
 let main = fs.readFileSync(mainFile, 'utf8');
 const importLine = "import './contrib/phpcode/browser/phpcode.contribution.js';";
 if (!main.includes(importLine)) { main += '\n// phpcode product defaults\n' + importLine + '\n'; fs.writeFileSync(mainFile, main); }
-console.log('Applied phpcode built-in Dracula, project icons, and editor defaults.');
+console.log('Applied phpcode built-in Marsh theme, project icons, and editor defaults.');
+
+// phpcode has provider settings in the agent, without a distribution account.
+// Keep extension authentication services available, but omit the unused global UI.
+function patch(file, before, after) {
+	const target = path.join(root, file);
+	const source = fs.readFileSync(target, 'utf8');
+	if (source.includes(after)) { return; }
+	if (!source.includes(before)) { throw new Error(`Review phpcode UI patch for ${file}`); }
+	fs.writeFileSync(target, source.replace(before, after));
+}
+const globalBar = 'src/vs/workbench/browser/parts/globalCompositeBar.ts';
+patch(globalBar, "import './media/globalCompositeBar.css';", "import './media/globalCompositeBar.css';\nimport product from '../../../platform/product/common/product.js';");
+patch(globalBar, 'export function isAccountsActionVisible(storageService: IStorageService): boolean {', 'export function isAccountsActionVisible(storageService: IStorageService): boolean {\n\tif (product.enableBuiltinCopilot === false) { return false; }');
+patch(globalBar, '\tgetContextMenuActions(): IAction[] {', '\tgetContextMenuActions(): IAction[] {\n\t\tif (product.enableBuiltinCopilot === false) { return []; }');
+patch(globalBar, 'function simpleActivityContextMenuActions(storageService: IStorageService, isAccount: boolean): IAction[] {', `function simpleActivityContextMenuActions(storageService: IStorageService, isAccount: boolean): IAction[] {
+	if (product.enableBuiltinCopilot === false) {
+		return [toAction({ id: 'toggle.hideManage', label: localize('manage', "Manage"), checked: true, enabled: false, run: () => { throw new Error('"Manage" can not be hidden'); } })];
+	}`);

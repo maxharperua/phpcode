@@ -218,4 +218,93 @@ suite('phpcode agent runtime', () => {
 		assert.match(renderFilePage(source, 'Component.php', 'no'), /positive/);
 	});
 
+	test('delegates concurrently with isolated histories and returns only final reports to parent', async () => {
+		const events: AgentEvent[] = []; const requests: AgentRequest[] = [];
+		let started = 0; let release!: () => void;
+		const bothStarted = new Promise<void>(resolve => { release = resolve; });
+		const transport: AgentTransport = async function* (request) {
+			requests.push(request);
+			const child = request.messages[0]?.content?.includes('PHPCODE_SUBAGENT');
+			if (child) {
+				assert.equal(JSON.stringify(request.messages).includes('PRIVATE_PARENT_HISTORY'), false);
+				assert.equal(request.tools.some(tool => ['run_subagent', 'propose_file', 'run_terminal'].includes(tool.function.name)), false);
+				if (!request.messages.some(message => message.role === 'tool')) {
+					if (++started === 2) { release(); } await bothStarted;
+					yield callChunk(0, 'read', 'read_file', '{"path":"a.php"}', 'tool_calls');
+				} else { yield textChunk('Report ' + request.messages.find(message => message.role === 'user')!.content, 'stop'); }
+			} else if (!request.messages.some(message => message.role === 'tool')) {
+				yield callChunk(0, 'a', 'run_subagent', '{"description":"A","prompt":"find A","subagent_type":"explore"}');
+				yield callChunk(1, 'b', 'run_subagent', '{"description":"B","prompt":"find B","subagent_type":"explore"}', 'tool_calls');
+			} else {
+				assert.equal(JSON.stringify(request.messages).includes('CHILD_LARGE_INTERMEDIATE'), false);
+				assert.deepStrictEqual(request.messages.filter(message => message.role === 'tool').map(message => message.tool_call_id), ['a', 'b']);
+				yield textChunk('Combined result', 'stop');
+			}
+		};
+		const result = await runAgentTurn({ mode: 'agent', model: 'bothub-test', messages: [{ role: 'system', content: 'Host instructions' }, { role: 'user', content: 'PRIVATE_PARENT_HISTORY' }], signal: new AbortController().signal, transport,
+			executeTool: async (_call, _signal, agent) => { assert.ok(agent); return 'CHILD_LARGE_INTERMEDIATE'; }, onEvent: event => events.push(event) });
+		assert.equal(result.status, 'completed'); assert.equal(started, 2);
+		assert.equal(events.filter(event => event.type === 'subagent-end' && event.status === 'completed').length, 2);
+		assert.ok(events.filter(event => event.type === 'subagent-start').every(event => event.agent.model === 'bothub-test'));
+		assert.equal(JSON.stringify(result.messages).includes('CHILD_LARGE_INTERMEDIATE'), false);
+	});
+
+	test('bounds child concurrency and total launches without host calls', async () => {
+		let active = 0; let peak = 0; let children = 0; let wake!: () => void;
+		const firstThree = new Promise<void>(resolve => { wake = resolve; });
+		const transport: AgentTransport = async function* (request) {
+			if (request.messages[0]?.content?.includes('PHPCODE_SUBAGENT')) {
+				children++; active++; peak = Math.max(peak, active); if (children === 3) { wake(); }
+				await firstThree; active--; yield textChunk('Done', 'stop');
+			} else if (!request.messages.some(message => message.role === 'tool')) {
+				for (let index = 0; index < 10; index++) {
+					yield callChunk(index, 'child-' + index, 'run_subagent', JSON.stringify({ description: 'Task ' + index, prompt: 'Research', subagent_type: 'explore' }), index === 9 ? 'tool_calls' : undefined);
+				}
+			} else { yield textChunk('Done', 'stop'); }
+		};
+		const result = await runAgentTurn({ mode: 'agent', model: 'test', messages: [{ role: 'user', content: 'delegate' }], signal: new AbortController().signal, transport, executeTool: async () => { throw new Error('Unexpected host call'); }, onEvent: () => {} });
+		assert.equal(peak, 3); assert.equal(children, 8); assert.equal(result.status, 'completed');
+		assert.equal(result.messages.filter(message => message.role === 'tool' && message.content?.includes('limit reached')).length, 2);
+	});
+
+	test('parent stop cancels every active child and preserves paired parent tool responses', async () => {
+		const controller = new AbortController(); let children = 0; const events: AgentEvent[] = [];
+		const transport: AgentTransport = async function* (request, signal) {
+			if (request.messages[0]?.content?.includes('PHPCODE_SUBAGENT')) {
+				await new Promise<void>((_resolve, reject) => {
+					signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+					if (++children === 2) { controller.abort(); }
+				});
+			} else {
+				yield callChunk(0, 'a', 'run_subagent', '{"description":"A","prompt":"Work","subagent_type":"explore"}');
+				yield callChunk(1, 'b', 'run_subagent', '{"description":"B","prompt":"Work","subagent_type":"general"}', 'tool_calls');
+			}
+		};
+		const result = await runAgentTurn({ mode: 'agent', model: 'test', messages: [{ role: 'user', content: 'run' }], signal: controller.signal, transport, executeTool: async () => 'unexpected', onEvent: event => events.push(event) });
+		assert.equal(result.status, 'cancelled'); assert.equal(children, 2);
+		assert.equal(events.filter(event => event.type === 'subagent-end' && event.status === 'cancelled').length, 2);
+		assert.deepStrictEqual(result.messages.filter(message => message.role === 'tool').map(message => message.tool_call_id).sort(), ['a', 'b']);
+	});
+
+	test('child restrictions are enforced against fabricated writes, commands, and nested delegation', async () => {
+		const names = ['propose_file', 'run_terminal', 'run_subagent']; let calls = 0;
+		const result = await runAgentTurn({ mode: 'agent', model: 'test', subagent: { id: 'child', name: 'Explore', type: 'explore', model: 'test' }, messages: [{ role: 'user', content: 'inspect' }], signal: new AbortController().signal,
+			transport: transportFor([[...names.map((name, index) => callChunk(index, name, name, '{}', index === 2 ? 'tool_calls' : undefined))], [textChunk('Cannot mutate', 'stop')]]),
+			executeTool: async () => { calls++; return 'bad'; }, onEvent: () => {} });
+		assert.equal(result.status, 'completed'); assert.equal(calls, 0);
+		assert.equal(result.messages.filter(message => message.role === 'tool' && message.content?.startsWith('Tool unavailable')).length, 3);
+	});
+
+	test('child provider failure returns an explicit failed result without ending the parent', async () => {
+		const events: AgentEvent[] = [];
+		const result = await runAgentTurn({ mode: 'agent', model: 'test', messages: [{ role: 'user', content: 'run' }], signal: new AbortController().signal,
+			transport: async function* (request) {
+				if (request.messages[0]?.content?.includes('PHPCODE_SUBAGENT')) { throw new AgentRequestError('rate-limit'); }
+				if (!request.messages.some(message => message.role === 'tool')) { yield callChunk(0, 'child', 'run_subagent', '{"description":"Fail","prompt":"Work","subagent_type":"general"}', 'tool_calls'); }
+				else { assert.match(request.messages.at(-1)!.content!, /error \(rate-limit\)/); yield textChunk('I will continue myself', 'stop'); }
+			}, executeTool: async () => 'unexpected', onEvent: event => events.push(event) });
+		assert.equal(result.status, 'completed');
+		assert.ok(events.some(event => event.type === 'subagent-end' && event.status === 'error'));
+	});
+
 });

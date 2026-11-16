@@ -16,4 +16,13 @@ if (result.enableBuiltinCopilot === false) {
 	}
 }
 fs.writeFileSync(file,JSON.stringify(result,null,'\t')+'\n');
+
+// Prepared assets keep native builds portable: regenerating ICNS is not a build prerequisite.
+for (const [source, destination] of [
+ ['phpcode.icns', 'resources/darwin/code.icns'],
+ ['phpcode.ico', 'resources/win32/code.ico'],
+ ['phpcode.png', 'resources/linux/code.png'],
+ ['phpcode-150.png', 'resources/win32/code_150x150.png'],
+ ['phpcode-70.png', 'resources/win32/code_70x70.png']
+]) { fs.copyFileSync(path.join(__dirname, 'resources/branding', source), path.join(root, destination)); }
 console.log('Applied phpcode product identity and Open VSX configuration:',file);

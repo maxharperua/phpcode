@@ -24,28 +24,52 @@ fs.writeFileSync(path.join(project,'.phpcodeignore'),'ignored/\n');
 fs.writeFileSync(path.join(project,'ignored/Hidden.php'),'<?php class HiddenIndexSentinel {}');
 fs.writeFileSync(path.join(fixture,'outside.php'),'<?php class OutsideSecretSentinel {}');
 fs.symlinkSync(path.join(fixture,'outside.php'),path.join(project,'link.php'));
-fs.writeFileSync(path.join(profile, 'User/settings.json'), JSON.stringify({ 'workbench.startupEditor': 'none', 'window.zoomLevel': 0 }));
+fs.writeFileSync(path.join(profile, 'User/settings.json'), JSON.stringify({ 'workbench.startupEditor': 'none', 'window.zoomLevel': 0, ...(process.env.PHPCODE_THEME_MIGRATION_SMOKE==='1' ? { 'workbench.colorTheme': 'phpcode Dracula', 'workbench.preferredDarkColorTheme': 'phpcode Dracula' } : {}) }));
+let pagerCommand; let pagerMarker;
+if(process.env.PHPCODE_TERMINAL_SMOKE==='1') {
+ const {spawnSync}=require('node:child_process');
+ const git=args=>{const result=spawnSync('git',['-c','core.hooksPath=/dev/null',...args],{cwd:project,encoding:'utf8'});assert.equal(result.status,0,result.stderr);};
+ git(['init','-q']);git(['-c','user.name=phpcode fixture','-c','user.email=fixture@example.invalid','commit','-q','--allow-empty','-m','PHPCODE_PAGER_REGRESSION']);
+ const quote=value=>"'"+value.replace(/'/g,"'\\''")+"'";
+ pagerMarker=path.join(fixture,'pager-was-started');const pager=path.join(fixture,'interactive-pager.sh');
+ fs.writeFileSync(pager,'#!/bin/sh\nprintf pager-started > '+quote(pagerMarker)+'\nsleep 5\n');fs.chmodSync(pager,0o700);
+ pagerCommand='git -c core.pager='+quote(pager)+' --paginate log --oneline -n 1; printf "PAGER_ENV:%s|%s|%s\\n" "$GIT_PAGER" "$PAGER" "$GIT_TERMINAL_PROMPT"';
+}
 const packaged = process.env.PHPCODE_PACKAGED_EXECUTABLE;
 const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE; if (!packaged) { env.VSCODE_DEV = '1'; }
-const launchOptions = { executablePath: packaged || path.join(root, '.build/electron/phpcode.app/Contents/MacOS/phpcode'), args: [...(packaged ? [] : [root]), '--user-data-dir', profile, '--extensions-dir', path.join(fixture,'extensions'), '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes', project], env, timeout: 60000 };
+const launchOptions = { executablePath: packaged || process.env.PHPCODE_DEV_EXECUTABLE || path.join(root, '.build/electron/phpcode.app/Contents/MacOS/phpcode'), args: [...(packaged ? [] : [root]), '--user-data-dir', profile, '--extensions-dir', path.join(fixture,'extensions'), '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes', project], env, timeout: 60000 };
 let application;
 const checks = [];
 (async () => {
  application = await _electron.launch(launchOptions);
+ await application.firstWindow();
  // Replace only this test application's native HTTP dependency. No external request, key or credits are used.
  await application.evaluate(({ }, data) => {
   globalThis.__phpcodeTest = { summaries:0 };
   globalThis.fetch = async (input, init) => {
    const url = String(input);
-   if (!url.startsWith('https://openai.bothub.chat/v1/')) { throw new Error('Unexpected network request in agent test'); }
+   const isPolza=url.startsWith('https://polza.ai/api/v1/');
+   if (!isPolza && !url.startsWith('https://openai.bothub.chat/v1/')) { throw new Error('Unexpected network request in agent test'); }
+   if (new URL(url).pathname.endsWith('/models') && isPolza) {
+    if(new Headers(init.headers).has('Authorization')) { throw new Error('Public Polza catalog received a credential'); }
+    if(globalThis.__phpcodeTest.delayPolzaCatalog) { globalThis.__phpcodeTest.polzaCatalogPending=true; await new Promise(resolve=>setTimeout(resolve,600)); globalThis.__phpcodeTest.polzaCatalogPending=false; }
+    return new Response(JSON.stringify({data:[{id:'anthropic/claude-polza-test',context_length:200000}]}),{status:200});
+   }
    if (url.endsWith('/models')) { return new Response(JSON.stringify({ data: [{ id:'phpcode-test',context_length:128000 }, { id:'claude-phpcode-test',context_window:1000000 }] }), { status:200 }); }
+   if(data.providerSmoke) {
+    const expected=isPolza?'Bearer phpcode-polza-test-key':'Bearer phpcode-fake-test-key';
+    if(new Headers(init.headers).get('Authorization')!==expected){throw new Error('Wrong provider credential');}
+    globalThis.__phpcodeTest.polzaRequests=(globalThis.__phpcodeTest.polzaRequests||0)+(isPolza?1:0);
+    globalThis.__phpcodeTest.bothubRequests=(globalThis.__phpcodeTest.bothubRequests||0)+(isPolza?0:1);
+   }
    const request = JSON.parse(init.body);
    const systemContent=request.messages[0]?.content; const systemText=Array.isArray(systemContent)?systemContent.map(part=>part.text).join(''):systemContent||'';
    const summarizing=systemText.includes('PHPCODE_CONVERSATION_COMPACTION');
    const content = request.messages.filter(message => message.role === 'user').at(-1).content;
    const lastUser = Array.isArray(content) ? content.map(part=>part.text).join('') : content;
+   (globalThis.__phpcodeTest.requests ||= []).push({lastUser,child:systemText.includes('PHPCODE_SUBAGENT')});
    if(request.stream_options?.include_usage !== true) { throw new Error('Usage reporting not requested'); }
-   if(request.model === 'claude-phpcode-test' && !summarizing) {
+   if((request.model === 'claude-phpcode-test' || request.model==='anthropic/claude-polza-test') && !summarizing) {
     const markers = request.messages.flatMap(message=>Array.isArray(message.content)?message.content.filter(part=>part.cache_control):[]);
     if(lastUser.includes('Кеш без меток') ? markers.length !== 0 : markers.length !== 2) { throw new Error('Incorrect Claude cache markers'); }
    }
@@ -53,11 +77,57 @@ const checks = [];
    let chunks;
    const text = (content, finish_reason) => ({ choices:[{ delta:{content},finish_reason }] });
    const call = (name,args,id) => ({ choices:[{ delta:{tool_calls:[{ index:0,id,type:'function',function:{name,arguments:JSON.stringify(args)} }]},finish_reason:'tool_calls' }] });
-   if (!summarizing && lastUser.includes('Останови')) {
+   if (systemText.includes('PHPCODE_SUBAGENT')) {
+    if(JSON.stringify(request.messages).includes('PARENT_HISTORY_SENTINEL')) { throw new Error('Parent history leaked into child'); }
+    if(request.tools.some(tool=>tool.function.name==='run_subagent')) { throw new Error('Nested delegation exposed'); }
+    globalThis.__phpcodeTest.children=(globalThis.__phpcodeTest.children||0)+(!toolMessages.length?1:0);
+    await new Promise(resolve=>setTimeout(resolve,1000));
+    if(lastUser.includes('CHILD_CANCEL')) {
+     if(init.signal.aborted){throw new DOMException('Aborted','AbortError');}
+     return new Response(new ReadableStream({start(controller){init.signal.addEventListener('abort',()=>controller.error(new Error('cancelled')),{once:true});}}),{status:200,headers:{'Content-Type':'text/event-stream'}});
+    }
+    if(lastUser.startsWith('CHILD_SHELL_')) {
+     const letter=lastUser.endsWith('A')?'a':'b';
+     chunks=toolMessages.length?[text('Команда: '+toolMessages.at(-1).content,'stop')]:[call('run_terminal',{command:'printf ran > subagent-'+letter+'.txt; printf subagent-'+letter},'child-command')];
+    } else if(lastUser.startsWith('CHILD_WRITE_')) {
+     const letter=lastUser.endsWith('A')?'a':'b';
+     chunks=toolMessages.length===0?[call('read_file',{path:'greet.php'},'child-read')]:toolMessages.length===1?[call('propose_file',{path:'greet.php',content:'<?php echo "child-'+letter+'";\n'},'child-write')]:[text('Правка: '+toolMessages.at(-1).content,'stop')];
+    } else { chunks=toolMessages.length?[text('Отчёт '+lastUser+' — greet.php изучен.','stop')]:[call('read_file',{path:'greet.php'},'child-read')]; }
+
+   } else if (!summarizing && lastUser.includes('TERMINAL_PAGER_TEST')) {
+    if(toolMessages.length) {
+     if(!toolMessages.at(-1).content.startsWith('Exit: 0') || !toolMessages.at(-1).content.includes('PHPCODE_PAGER_REGRESSION') || !toolMessages.at(-1).content.includes('PAGER_ENV:cat|cat|0')){throw new Error('Pager-free terminal did not finish with expected output');}
+     chunks=[text('Git завершён без пейджера.','stop')];
+    } else {chunks=[call('run_terminal',{command:data.pagerCommand},'pager-command')];}
+   } else if (!summarizing && lastUser.includes('POLZA_CHAT_TEST')) {
+    if(!isPolza){throw new Error('Polza request routed elsewhere');}
+    await new Promise(resolve=>setTimeout(resolve,500));
+    chunks=toolMessages.length?[text('Ответ polza.ai: файл прочитан.','stop')]:[call('read_file',{path:'greet.php'},'polza-read')];
+   } else if(!summarizing && lastUser.includes('POLZA_SUBAGENT_TEST')) {
+    chunks=toolMessages.length?[text('Субагент polza.ai завершён.','stop')]:[call('run_subagent',{description:'Исследование polza.ai',prompt:'POLZA_CHILD_TEST',subagent_type:'explore'},'polza-child')];
+   } else if(!summarizing && lastUser.includes('PROVIDER_BOTHUB_TEST')) {
+    if(isPolza){throw new Error('BotHub request routed to Polza');}
+    chunks=[text('Ответ BotHub: ключ сохранён отдельно.','stop')];
+   } else if (!summarizing && lastUser.includes('Параллельные субагенты')) {
+    await new Promise(resolve=>setTimeout(resolve,1000));
+    chunks=toolMessages.length?[text('Субагенты завершили исследование.','stop')]:[{choices:[{delta:{tool_calls:[{index:0,id:'child-a',type:'function',function:{name:'run_subagent',arguments:JSON.stringify({description:'Исследование A',prompt:'CHILD_A',subagent_type:'explore'})}},{index:1,id:'child-b',type:'function',function:{name:'run_subagent',arguments:JSON.stringify({description:'Исследование B',prompt:'CHILD_B',subagent_type:'explore'})}}]},finish_reason:'tool_calls'}]}];
+   } else if(!summarizing && (lastUser.includes('SUBAGENT_POLICY_TEST') || lastUser.includes('SUBAGENT_WRITE_TEST'))) {
+    const writing=lastUser.includes('SUBAGENT_WRITE_TEST');
+    if(writing && toolMessages.length===0) { chunks=[call('read_file',{path:'greet.php'},'parent-read')]; }
+    else if(toolMessages.length===(writing?1:0)) {
+     chunks=[{choices:[{delta:{tool_calls:['A','B'].map((letter,index)=>({index,id:'worker-'+letter,type:'function',function:{name:'run_subagent',arguments:JSON.stringify({description:(writing?'Правка ':'Команда ')+letter,prompt:'CHILD_'+(writing?'WRITE_':'SHELL_')+letter,subagent_type:writing?'general':'shell'})}}))},finish_reason:'tool_calls'}]}];
+    } else if(writing && toolMessages.length===3) { chunks=[call('propose_file',{path:'greet.php',content:'<?php echo "stale-parent";\n'},'stale-parent')]; }
+    else {
+     if(writing && !toolMessages.at(-1).content.includes('subagent changed')) { throw new Error('Stale parent overwrite was not refused'); }
+     chunks=[text(writing?'Конфликты субагентов обработаны.':'Подтверждения субагентов обработаны.','stop')];
+    }
+   } else if (!summarizing && lastUser.includes('Остановить субагентов')) {
+    chunks=[call('run_subagent',{description:'Длительное исследование',prompt:'CHILD_CANCEL',subagent_type:'explore'},'child-cancel')];
+   } else if (!summarizing && lastUser.includes('Останови')) {
     return new Response(new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode('data: '+JSON.stringify(text('Долгий ответ…'))+'\n\n')); init.signal.addEventListener('abort', () => controller.error(new Error('cancelled')),{once:true}); } }),{status:200,headers:{'Content-Type':'text/event-stream'}});
-   }
-   if(summarizing) {
+   } else if(summarizing) {
     globalThis.__phpcodeTest.summaries++;
+    globalThis.__phpcodeTest.polzaSummaries=(globalThis.__phpcodeTest.polzaSummaries||0)+(isPolza?1:0);
     chunks=[text('Сводка: пользователь изучает PHP-проект; PaymentProcessor найден, изменения greet.php проверены. Правки выполняются согласно выбранному режиму, команды требуют подтверждения. Сохранять ограничения пользователя и проверять текущее содержимое файлов.','stop')];
    } else if(lastUser.includes('Длинная история')) {
     chunks=[text('OLDER_CONTEXT_MARKER '.repeat(1800),'stop')];
@@ -103,7 +173,7 @@ const checks = [];
    const stream = new ReadableStream({ async start(controller) { for (const chunk of chunks) { controller.enqueue(new TextEncoder().encode('data: '+JSON.stringify(chunk)+'\n\n')); await new Promise(resolve=>setTimeout(resolve,80)); } controller.enqueue(new TextEncoder().encode('data: '+JSON.stringify({choices:[],usage:{prompt_tokens:1000,completion_tokens:100,total_tokens:1100,prompt_tokens_details:{cached_tokens:900,cache_write_tokens:0}}})+'\n\n')); controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n')); controller.close(); } });
    return new Response(stream,{status:200,headers:{'Content-Type':'text/event-stream'}});
   };
- }, { after });
+ }, { after, providerSmoke:process.env.PHPCODE_PROVIDER_SMOKE==='1', pagerCommand });
  const page = await application.firstWindow();
  page.on('pageerror',error=>console.error('Renderer error:',error.message));
  page.on('console',message=>{if(message.type()==='error'){console.error('Renderer console:',message.text());}});
@@ -114,6 +184,42 @@ const checks = [];
  await page.locator('.quick-input-list .monaco-list-row').filter({hasText:'phpcode: Открыть Агента'}).first().click({timeout:15000});
  const panel = page.locator('.phpcode-agent');
  await panel.waitFor({state:'visible',timeout:30000});
+ if(process.env.PHPCODE_THEME_SMOKE==='1') {
+  await page.waitForFunction(()=>getComputedStyle(document.querySelector('.monaco-workbench')).getPropertyValue('--vscode-editor-background').trim()==='#0e1915');
+  if(process.env.PHPCODE_THEME_MIGRATION_SMOKE==='1') {
+   let settings;const deadline=Date.now()+5000;
+   do {
+    settings=JSON.parse(fs.readFileSync(path.join(profile,'User/settings.json'),'utf8'));
+    if(settings['workbench.colorTheme']==='phpcode Marsh'&&settings['workbench.preferredDarkColorTheme']==='phpcode Marsh'){break;}
+    await new Promise(resolve=>setTimeout(resolve,25));
+   } while(Date.now()<deadline);
+   assert.equal(settings['workbench.colorTheme'],'phpcode Marsh');assert.equal(settings['workbench.preferredDarkColorTheme'],'phpcode Marsh');
+   checks.push('saved legacy Dracula theme and preferred dark theme migrate to Marsh');
+  }
+  assert.equal(await page.locator('.codicon-accounts-view-bar-icon:visible').count(),0,'Unused Accounts button is absent');
+  await panel.getByRole('textbox',{name:'Сообщение агенту',exact:true}).focus();
+  const focus=await panel.evaluate(element=>({
+   outline:getComputedStyle(element.querySelector('textarea')).outlineStyle,
+   border:getComputedStyle(element.querySelector('.phpcode-agent-composer')).borderColor
+  }));
+  assert.equal(focus.outline,'none','Textarea has no inner square focus frame');
+  // Border transition may still be animating; assert the final keyboard-focus indicator.
+  await page.waitForFunction(()=>getComputedStyle(document.querySelector('.phpcode-agent-composer')).borderColor==='rgb(131, 155, 104)');
+  for(const width of [300,420,640]) {
+   await panel.evaluate((element,width)=>{element.style.width=width+'px';element.style.maxWidth='none';},width);
+   const layout=await panel.evaluate(element=>{
+    const composer=element.querySelector('.phpcode-agent-composer').getBoundingClientRect();
+    return {height:composer.height,fit:[...element.querySelector('.phpcode-agent-controls').children].every(child=>{const r=child.getBoundingClientRect();return r.left>=composer.left&&r.right<=composer.right;})};
+   });
+   assert.ok(layout.fit,`Composer controls fit at ${width}px`);assert.ok(layout.height<=130,'Composer stays compact');
+  }
+  await panel.evaluate(element=>{element.style.removeProperty('width');element.style.removeProperty('max-width');});
+  fs.mkdirSync(path.join(__dirname,'release'),{recursive:true});
+  await page.screenshot({path:path.join(__dirname,'release/phpcode-marsh-preview.png')});
+  checks.push('Marsh theme is active by default; Accounts button absent; rounded composer keyboard focus; controls fit at 300/420/640px');
+  await application.close();application=undefined;
+  console.log(JSON.stringify({ok:true,checks,fixture,liveProviderTest:false},null,2));return;
+ }
  await panel.locator('input[type=password]').fill('phpcode-fake-test-key');
  await panel.getByRole('button',{name:'Сохранить ключ',exact:true}).click();
  await panel.locator('.model-picker').click();
@@ -121,6 +227,201 @@ const checks = [];
  await page.getByRole('option',{name:/^phpcode-test/}).click();
  checks.push('secure key setup and native model catalog');
  const prompt=panel.getByRole('textbox',{name:'Сообщение агенту',exact:true});
+ if(process.env.PHPCODE_DESIGN_SMOKE==='1') {
+  await prompt.fill('Измени greet.php');await prompt.press('Enter');
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor({timeout:30000});
+  const answer=panel.locator('.phpcode-agent-transcript > .phpcode-agent-entry.assistant').last();
+  const footer=answer.locator('.phpcode-agent-message-footer');
+  await footer.waitFor({state:'attached'});
+  await panel.locator('.phpcode-agent-composer').hover();
+  await page.waitForFunction(()=>getComputedStyle(document.querySelector('.phpcode-agent-transcript > .assistant .phpcode-agent-message-footer')).opacity==='0');
+  await answer.hover();
+  await page.waitForFunction(()=>getComputedStyle(document.querySelector('.phpcode-agent-transcript > .assistant .phpcode-agent-message-footer')).opacity==='1');
+  const timestamp=await footer.locator('time').getAttribute('datetime');
+  assert.ok(timestamp && Number.isFinite(Date.parse(timestamp)));
+  assert.ok(Math.abs(Date.now()-Date.parse(timestamp))<60000,'Answer has its actual creation time');
+  const previousClipboard=await application.evaluate(({clipboard})=>clipboard.readText());
+  try {
+   const copy=footer.getByRole('button',{name:'Копировать ответ',exact:true});
+   assert.equal(await copy.textContent(),'');assert.equal(await copy.locator('.codicon-copy').count(),1);
+   await copy.click();
+      const expected='Предложение готово. Проверьте diff и примените правку.';
+   const deadline=Date.now()+3000;let copied=false;
+   while(Date.now()<deadline) {if(await application.evaluate(({clipboard})=>clipboard.readText())===expected){copied=true;break;}await new Promise(resolve=>setTimeout(resolve,20));}
+   assert.ok(copied,'Native clipboard received exactly the answer text');
+  } finally {await application.evaluate(({clipboard},value)=>clipboard.writeText(value),previousClipboard);}
+  checks.push('answer copy icon copies only answer text; date/time show on hover and remain absent from copied text');
+  await panel.locator('.phpcode-agent-change-fold > summary').click();
+  const diff=panel.locator('.diff-change');
+  assert.equal(await diff.textContent(),'');assert.equal(await diff.locator('.codicon-diff').count(),1);assert.equal(await diff.getAttribute('title'),'Diff');
+  await diff.click();await page.locator('.monaco-diff-editor').first().waitFor({state:'visible'});
+  await panel.locator('.apply-change').click();
+  await panel.locator('.phpcode-agent-change[data-state=applied]').waitFor();
+  const undo=panel.locator('.undo-change');
+  assert.equal(await undo.textContent(),'');assert.equal(await undo.locator('.codicon-discard').count(),1);assert.equal(await undo.getAttribute('title'),'Отменить');
+  await answer.hover();
+  await page.waitForFunction(()=>getComputedStyle(document.querySelector('.phpcode-agent-transcript > .assistant .phpcode-agent-message-footer')).opacity==='1');
+  await panel.screenshot({path:path.join(__dirname,'release/phpcode-chat-design-preview.png')});
+  await page.screenshot({path:path.join(__dirname,'release/phpcode-marsh-preview.png')});
+  await undo.click();await panel.locator('.phpcode-agent-change[data-state=undone]').waitFor({state:'attached'});
+  checks.push('icon-only Diff and Undo keep tooltips and native review/apply/undo behavior');
+  await application.close();application=await _electron.launch(launchOptions);
+  const reopened=await application.firstWindow();await reopened.locator('.monaco-workbench').waitFor({timeout:60000});
+  await reopened.keyboard.press('Meta+Shift+p');await reopened.locator('.quick-input-widget input').first().fill('>phpcode: Открыть Агента');
+  await reopened.locator('.quick-input-list .monaco-list-row').filter({hasText:'phpcode: Открыть Агента'}).first().click();
+  const restored=reopened.locator('.phpcode-agent-transcript > .assistant').last();await restored.waitFor();
+  assert.equal(await restored.locator('time').getAttribute('datetime'),timestamp,'Answer timestamp survives restart unchanged');
+  checks.push('answer timestamp persists across application restart');
+  await application.close();application=undefined;
+  console.log(JSON.stringify({ok:true,checks,fixture,liveProviderTest:false},null,2));return;
+ }
+ if(process.env.PHPCODE_TERMINAL_SMOKE==='1') {
+  await panel.locator('.phpcode-agent-mode').selectOption('agent-auto');
+  await prompt.fill('TERMINAL_PAGER_TEST'); await prompt.press('Enter');
+  await panel.locator('.assistant').filter({hasText:'Git завершён без пейджера.'}).waitFor({timeout:20000});
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor();
+  assert.equal(fs.existsSync(pagerMarker),false,'Forced Git pager was never launched');
+  const command=page.locator('.phpcode-agent-command[data-state=completed]');
+  assert.match(await command.innerText(),/PHPCODE_PAGER_REGRESSION/);
+  assert.match(await command.innerText(),/PAGER_ENV:cat\|cat\|0/);
+  checks.push('forced Git pager disabled for hidden agent PTY; original exit code and full output return promptly');
+  await application.close();application=undefined;
+  console.log(JSON.stringify({ok:true,checks,fixture,liveProviderTest:false},null,2));return;
+ }
+ if(process.env.PHPCODE_PROVIDER_SMOKE==='1') {
+  const select=panel.locator('.phpcode-agent-provider');
+  const chooseProvider=async id=>{await select.selectOption(id);await panel.getByRole('button',{name:id==='polza'?'polza.ai':'BotHub',exact:true}).waitFor();};
+  await panel.getByRole('button',{name:'BotHub',exact:true}).click();
+  await chooseProvider('polza');
+  assert.equal(await panel.locator('input[type=password]').inputValue(),'');
+  assert.equal(await panel.locator('.model-picker').innerText(),'Выберите модель');
+  await panel.locator('.model-picker').click();
+  await page.getByRole('option',{name:/^anthropic\/claude-polza-test/}).click();
+  await panel.getByLabel('API-ключ polza.ai',{exact:true}).fill('phpcode-polza-test-key');
+  await panel.getByRole('button',{name:'Сохранить ключ',exact:true}).click();
+  await prompt.fill('POLZA_CHAT_TEST'); await prompt.press('Enter');
+  await panel.locator('.phpcode-agent-status[data-state=running]').waitFor();
+  assert.equal(await select.isDisabled(),true,'Provider cannot change mid-turn');
+  await panel.locator('.assistant').filter({hasText:'Ответ polza.ai: файл прочитан.'}).waitFor({timeout:30000});
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor();
+  checks.push('Polza public chat catalog, context windows, streaming and file tools use a separate credential');
+  await prompt.fill('POLZA_SUBAGENT_TEST'); await prompt.press('Enter');
+  await panel.locator('.assistant').filter({hasText:'Субагент polza.ai завершён.'}).waitFor({timeout:30000});
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor();
+  assert.equal(await panel.locator('.phpcode-agent-subagent[data-status=completed]').count(),1);
+  checks.push('subagents inherit the selected Polza provider and Claude cache markers');
+  await panel.locator('.context-budget').click(); await page.getByRole('option',{name:'8k',exact:true}).click();
+  await prompt.fill('Длинная история'); await prompt.press('Enter');
+  await panel.locator('.assistant').filter({hasText:'OLDER_CONTEXT_MARKER'}).waitFor({timeout:30000});
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor();
+  await prompt.fill('Продолжи после суммаризации'); await prompt.press('Enter');
+  await panel.locator('.assistant').filter({hasText:'Продолжаю с сохранённой сводкой'}).waitFor({timeout:30000});
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor();
+  assert.ok(await application.evaluate(()=>globalThis.__phpcodeTest.polzaSummaries)>0);
+  checks.push('automatic compaction also routes to Polza');
+  await panel.getByRole('button',{name:'polza.ai',exact:true}).click();
+  await application.evaluate(()=>{globalThis.__phpcodeTest.delayPolzaCatalog=true;});
+  await panel.getByRole('button',{name:'Обновить модели',exact:true}).click();
+  const deadline=Date.now()+10000;
+  while(!await application.evaluate(()=>!!globalThis.__phpcodeTest.polzaCatalogPending)) {if(Date.now()>deadline){throw new Error('Catalog request did not start');} await new Promise(resolve=>setTimeout(resolve,20));}
+  await chooseProvider('bothub');
+  await new Promise(resolve=>setTimeout(resolve,800));
+  assert.equal(await panel.locator('.model-picker').innerText(),'phpcode-test');
+  await panel.locator('.model-picker').click();
+  assert.equal(await page.getByRole('option',{name:/^anthropic\/claude-polza-test/}).count(),0);
+  await page.keyboard.press('Escape');
+  await prompt.fill('PROVIDER_BOTHUB_TEST'); await prompt.press('Enter');
+  await panel.locator('.assistant').filter({hasText:'Ответ BotHub: ключ сохранён отдельно.'}).waitFor({timeout:30000});
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor();
+  checks.push('switching restores provider-specific models and a delayed Polza catalog cannot replace BotHub models');
+  await chooseProvider('polza');
+  assert.equal(await panel.locator('.model-picker').innerText(),'anthropic/claude-polza-test');
+  await panel.getByRole('button',{name:'Удалить ключ',exact:true}).click();
+  const before=await application.evaluate(()=>globalThis.__phpcodeTest.polzaRequests);
+  await prompt.fill('POLZA_CHAT_TEST no key'); await prompt.press('Enter');
+  await panel.locator('.phpcode-agent-status[data-state=error]').waitFor({timeout:10000});
+  assert.equal(await application.evaluate(()=>globalThis.__phpcodeTest.polzaRequests),before);
+  await chooseProvider('bothub');
+  await prompt.fill('PROVIDER_BOTHUB_TEST again'); await prompt.press('Enter');
+  await panel.locator('.assistant').filter({hasText:'Ответ BotHub: ключ сохранён отдельно.'}).nth(1).waitFor({timeout:30000});
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor();
+  checks.push('deleting the Polza key prevents requests without falling back to BotHub and leaves its key intact');
+  await chooseProvider('polza');
+  await page.screenshot({path:path.join(fixture,'providers.png')});
+  await application.close(); application=await _electron.launch(launchOptions);
+  const reopened=await application.firstWindow(); await reopened.locator('.monaco-workbench').waitFor({timeout:60000});
+  await reopened.keyboard.press('Meta+Shift+p'); await reopened.locator('.quick-input-widget input').first().fill('>phpcode: Открыть Агента');
+  await reopened.locator('.quick-input-list .monaco-list-row').filter({hasText:'phpcode: Открыть Агента'}).first().click();
+  const restored=reopened.locator('.phpcode-agent');
+  await restored.getByRole('button',{name:'polza.ai',exact:true}).waitFor();
+  assert.equal(await restored.locator('.model-picker').innerText(),'anthropic/claude-polza-test');
+  checks.push('provider and per-provider model selection survive restart');
+  await application.close(); application=undefined;
+  console.log(JSON.stringify({ok:true,checks,fixture,liveProviderTest:false},null,2)); return;
+ }
+ if(process.env.PHPCODE_SUBAGENT_SMOKE==='1') {
+  await prompt.fill('Параллельные субагенты PARENT_HISTORY_SENTINEL'); await prompt.press('Enter');
+  const process=panel.locator('details.phpcode-agent-processes').last();
+  await process.locator(':scope > summary .phpcode-agent-spinner').waitFor({timeout:15000});
+  assert.equal(await process.getAttribute('open'),null,'Processes initially collapsed while waiting for model');
+  const elapsed=process.locator(':scope > summary .phpcode-agent-elapsed');
+  await elapsed.waitFor();
+  await process.locator(':scope > summary').click();
+  await panel.locator('.phpcode-agent-subagent[data-status=running]').first().waitFor({timeout:15000});
+  await page.waitForFunction(()=>document.querySelectorAll('.phpcode-agent-subagent[data-status=running]').length===2,undefined,{timeout:15000});
+  const child=panel.locator('.phpcode-agent-subagent').first();
+  assert.equal(await child.getAttribute('open'),null);
+  await child.locator(':scope > summary').click();
+  await page.waitForFunction(()=>document.querySelectorAll('.phpcode-agent-subagent .tool').length>=2,undefined,{timeout:15000});
+  assert.notEqual(await child.getAttribute('open'),null,'Child disclosure remains open across streaming updates');
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor({timeout:30000});
+  assert.equal(await panel.locator('.phpcode-agent-subagent[data-status=completed]').count(),2);
+  assert.equal(await panel.locator('.phpcode-agent-spinner').count(),0,'All busy indicators settle');
+  assert.equal(await application.evaluate(()=>globalThis.__phpcodeTest.children),2);
+  checks.push('isolated concurrent subagents with nested history and stable collapsed/open disclosures');
+  await page.screenshot({path:path.join(fixture,'subagents-complete.png')});
+  await panel.locator('.phpcode-agent-mode').selectOption('agent-semi');
+  await prompt.fill('SUBAGENT_POLICY_TEST'); await prompt.press('Enter');
+  const approval=panel.locator('.phpcode-agent-approval');
+  await approval.locator('pre').waitFor({timeout:20000});
+  const firstCommand=await approval.locator('pre').innerText();
+  const declined=firstCommand.includes('subagent-a')?'a':'b'; const allowed=declined==='a'?'b':'a';
+  assert.equal(fs.existsSync(path.join(project,'subagent-a.txt')),false);
+  assert.equal(fs.existsSync(path.join(project,'subagent-b.txt')),false);
+  assert.equal(await panel.locator('.phpcode-agent-status .phpcode-agent-spinner').count(),0,'Awaiting approval does not pretend to execute');
+  await approval.getByRole('button',{name:'Отклонить',exact:true}).click();
+  await approval.locator('pre').filter({hasText:'subagent-'+allowed}).waitFor({timeout:20000});
+  await approval.getByRole('button',{name:'Разрешить',exact:true}).click();
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor({timeout:30000});
+  assert.equal(fs.existsSync(path.join(project,'subagent-'+declined+'.txt')),false);
+  assert.equal(fs.readFileSync(path.join(project,'subagent-'+allowed+'.txt'),'utf8'),'ran');
+  checks.push('parallel shell workers serialize approvals, respect decline and use the shared command journal');
+  await prompt.fill('SUBAGENT_WRITE_TEST'); await prompt.press('Enter');
+  await panel.locator('.phpcode-agent-status[data-state=running]').waitFor({timeout:10000});
+  await panel.locator('.phpcode-agent-status[data-state=completed]').waitFor({timeout:30000});
+  assert.match(fs.readFileSync(path.join(project,'greet.php'),'utf8'),/^<\?php echo "child-[ab]";\n$/);
+  const transcript=await panel.locator('.phpcode-agent-transcript').textContent();
+  assert.match(transcript,/File assigned to another agent/);
+  checks.push('parallel edits refuse worker conflicts and stale parent overwrites');
+  await prompt.fill('Остановить субагентов'); await prompt.press('Enter');
+  await panel.locator('.phpcode-agent-subagent[data-status=running]').waitFor({timeout:15000,state:'attached'});
+  await panel.getByRole('button',{name:'Остановить',exact:true}).click();
+  await panel.locator('.phpcode-agent-status[data-state=cancelled]').waitFor({timeout:15000});
+  assert.equal(await panel.locator('.phpcode-agent-subagent[data-status=cancelled]').count(),1);
+  checks.push('parent stop cancels and settles child indicators');
+  await application.close();
+  application=await _electron.launch(launchOptions); const reopened=await application.firstWindow();
+  await reopened.locator('.monaco-workbench').waitFor({timeout:60000});
+  await reopened.keyboard.press('Meta+Shift+p');
+  await reopened.locator('.quick-input-widget input').first().fill('>phpcode: Открыть Агента');
+  await reopened.locator('.quick-input-list .monaco-list-row').filter({hasText:'phpcode: Открыть Агента'}).first().click();
+  await reopened.locator('.phpcode-agent-subagent').first().waitFor({timeout:15000,state:'attached'});
+  assert.equal(await reopened.locator('.phpcode-agent-subagent').count(),7);
+  assert.equal(await reopened.locator('.phpcode-agent-subagent[data-status=running]').count(),0);
+  checks.push('subagent history survives application restart without stuck busy indicators');
+  await application.close(); application=undefined;
+  console.log(JSON.stringify({ok:true,checks,fixture},null,2)); return;
+ }
  await panel.locator('.phpcode-agent-composer').evaluate((element, uris)=>{const data=new DataTransfer();data.setData('ResourceURLs',JSON.stringify(uris));element.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));},[pathToFileURL(path.join(project,'greet.php')).href,pathToFileURL(path.join(project,'services')).href]);
  await panel.locator('.phpcode-agent-contexts').getByRole('button').filter({hasText:'greet.php'}).waitFor();
  await panel.locator('.phpcode-agent-contexts').getByRole('button').filter({hasText:'services'}).waitFor();
@@ -383,4 +684,4 @@ const checks = [];
  const result={ok:true,checks,fixture,liveProviderTest:false};
  fs.writeFileSync(path.join(__dirname,'agent-verification-result.json'),JSON.stringify(result,null,2)+'\n');
  console.log(JSON.stringify(result,null,2));
-})().catch(async error=>{console.error(error); if(application){ try{const page=await application.firstWindow(); await page.screenshot({path:path.join(__dirname,'release/phpcode-agent-failure.png')}); console.error((await page.locator('body').innerText()).slice(-8000));}catch{} await application.close();} process.exitCode=1;});
+})().catch(async error=>{console.error(error); if(application){ try{console.error('MOCK REQUESTS',JSON.stringify(await application.evaluate(()=>globalThis.__phpcodeTest?.requests?.slice(-12))));const page=await application.firstWindow(); await page.screenshot({path:path.join(__dirname,'release/phpcode-agent-failure.png')}); console.error((await page.locator('body').innerText()).slice(-8000));}catch{} await application.close();} process.exitCode=1;});

@@ -11,6 +11,30 @@ const { spawnSync } = require('node:child_process');
 const { desktop, lock, repo, run, windowsSdkBin } = require('./lib.cjs');
 const crypto = require('node:crypto');
 
+test('theme and native icon edits invalidate source identity while text line endings stay portable', () => {
+	const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'phpcode-digest-test-'));
+	try {
+		for (const directory of ['agent', 'agentProvider', 'database', 'database-runtime', 'devcontainers', 'resources', 'scripts']) { fs.mkdirSync(path.join(fixture, directory)); }
+		for (const file of ['upstream.json', 'product-overrides.json', 'disabled-agent-config.json', 'package.json', 'pnpm-lock.yaml', 'package-container-server.cjs', 'build-container-dependencies.cjs', 'scripts/phpcode.cjs']) { fs.writeFileSync(path.join(fixture, file), 'fixture\n'); }
+		fs.writeFileSync(path.join(fixture, 'package.json'), '{}\n');
+		fs.copyFileSync(path.join(__dirname, 'source-digest.cjs'), path.join(fixture, 'scripts/source-digest.cjs'));
+		fs.writeFileSync(path.join(fixture, 'scripts/lib.cjs'), `module.exports = { repo: ${JSON.stringify(fixture)} };`);
+		const { sourceDigest } = require(path.join(fixture, 'scripts/source-digest.cjs'));
+		const theme = path.join(fixture, 'resources/theme.json');
+		const icon = path.join(fixture, 'resources/icon.png');
+		fs.writeFileSync(theme, '{"accent":"green"}\n');
+		fs.writeFileSync(icon, Buffer.from([0x89, 0x50, 0xff]));
+		const first = sourceDigest();
+		fs.writeFileSync(theme, '{"accent":"green"}\r\n');
+		assert.equal(sourceDigest(), first);
+		fs.writeFileSync(icon, Buffer.from([0x89, 0x50, 0xfe]));
+		const second = sourceDigest();
+		assert.notEqual(second, first, 'Native assets are hashed as bytes');
+		fs.writeFileSync(theme, '{"accent":"olive"}\n');
+		assert.notEqual(sourceDigest(), second, 'Theme changes invalidate cached server assets');
+	} finally { fs.rmSync(fixture, { recursive: true, force: true }); }
+});
+
 test('release staging verifies all platform artifacts and refuses altered installers', async () => {
 	const { prepareRelease } = require('./release-assets.cjs');
 	const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'phpcode-release-test-'));

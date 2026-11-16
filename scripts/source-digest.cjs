@@ -15,16 +15,21 @@ function sourceDigest() {
 			for (const name of fs.readdirSync(location).sort()) {
 				if (!['node_modules', 'assets'].includes(name)) { visit(`${relative}/${name}`); }
 			}
-		} else if (!relative.includes('.test.') && /\.(cjs|mjs|js|ts|css|html|json|yaml|svg|md)$/.test(relative)) { files.push(relative); }
+		} else if (!relative.includes('.test.') && /\.(cjs|mjs|js|ts|css|html|json|yaml|svg|md|png|ico|icns)$/.test(relative)) { files.push(relative); }
 	}
-	for (const name of ['agent', 'agentProvider', 'database', 'database-runtime', 'devcontainers']) { visit(name); }
+	for (const name of ['agent', 'agentProvider', 'database', 'database-runtime', 'devcontainers', 'resources']) { visit(name); }
 	for (const name of fs.readdirSync(repo).filter(name => /^apply-.*\.cjs$/.test(name))) { files.push(name); }
 	files.push('upstream.json', 'product-overrides.json', 'disabled-agent-config.json', 'package.json', 'pnpm-lock.yaml', 'package-container-server.cjs', 'build-container-dependencies.cjs', 'scripts/source-digest.cjs', 'scripts/phpcode.cjs');
 	const hash = crypto.createHash('sha256');
 	for (const name of files.sort()) {
 		hash.update(name + '\0');
 		// Git checkouts may use CRLF on Windows; the source identity must remain portable.
-		hash.update(fs.readFileSync(path.join(repo, name), 'utf8').replaceAll('\r\n', '\n') + '\0');
+		if (/\.(png|ico|icns)$/.test(name)) {
+			hash.update(fs.readFileSync(path.join(repo, name)));
+			hash.update('\0');
+		} else {
+			hash.update(fs.readFileSync(path.join(repo, name), 'utf8').replaceAll('\r\n', '\n') + '\0');
+		}
 	}
 	return hash.digest('hex');
 }

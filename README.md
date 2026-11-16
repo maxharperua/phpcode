@@ -1,6 +1,6 @@
 # phpcode
 
-Самостоятельная IDE на базе Code OSS: собственный агент BotHub, клиент MySQL/MariaDB и PostgreSQL, Dev Containers, тема Dracula и дерево проекта с иконками. Приложение собирается целиком вместе со встроенными компонентами.
+Самостоятельная IDE на базе Code OSS: собственный агент с выбором BotHub / polza.ai, клиент MySQL/MariaDB и PostgreSQL, Dev Containers, тема Marsh и дерево проекта с иконками. Приложение собирается целиком вместе со встроенными компонентами.
 
 Готовые установщики и переносимые архивы распространяются через [GitHub Releases](https://github.com/maxharperua/phpcode/releases). Там же находятся SHA-256 и сведения о сборках. В истории Git хранятся исходники и сборочные инструкции; большие исполняемые файлы прикрепляются к релизам.
 
@@ -30,7 +30,7 @@ node scripts/phpcode.cjs package
 ## Структура
 
 - `agent/` — интерфейс чата, сессии, цикл инструментов, индекс проекта и суммаризация.
-- `agentProvider/` — транспорт BotHub, IPC и хранение ключа.
+- `agentProvider/` — транспорт BotHub / polza.ai, IPC и раздельное хранение ключей.
 - `database/`, `database-runtime/` — клиент БД и закреплённые драйверы.
 - `devcontainers/` — собственный remote resolver и управление контейнерами.
 - `apply-*.cjs`, `patches/`, `overlays/` — воспроизводимые изменения Code OSS и тесты интеграции с ядром.

@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { PhpcodeProviderId } from './providerProfiles.js';
 import { Event } from '../../../base/common/event.js';
 import { createDecorator } from '../../instantiation/common/instantiation.js';
 
@@ -23,11 +24,11 @@ export interface PhpcodeProviderModel {
 	readonly contextWindow?: number;
 }
 
-/** Native transport for the fixed BotHub endpoint; API keys are never persisted here. */
+/** Native transport for the allowlisted provider endpoints; API keys are never persisted here. */
 export interface IPhpcodeProviderService {
 	readonly _serviceBrand: undefined;
 	readonly onDidStream: Event<IPhpcodeProviderStreamEvent>;
-	start(requestId: string, key: string, body: string): Promise<void>;
+	start(requestId: string, key: string, body: string, providerId?: PhpcodeProviderId): Promise<void>;
 	cancel(requestId: string): Promise<void>;
-	models(key: string): Promise<PhpcodeProviderModel[]>;
+	models(key: string, providerId?: PhpcodeProviderId): Promise<PhpcodeProviderModel[]>;
 }

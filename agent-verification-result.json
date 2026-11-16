@@ -35,24 +35,19 @@
     "legacy 32k sessions migrate to model context and step-limit chats can continue with accurate diagnostics",
     "legacy automatic-edit chats restore as semi-automatic without gaining command permissions"
   ],
-  "fixture": "/private/tmp/phpcode-agent-fWuFPF",
   "liveProviderTest": false,
-  "build": "r6",
+  "release": "v0.1.1",
   "platform": "darwin-arm64",
   "unitTests": {
-    "passing": 62,
-    "areas": [
-      "file reference parsing",
-      "Dev Container customization merging",
-      "manual, semi-automatic and automatic execution permissions",
-      "agent runtime and compaction",
-      "model budgets, cache usage and native transport",
-      "local project index"
-    ]
+    "passing": 74,
+    "product": 20,
+    "agentRuntime": 54
   },
   "validation": [
-    "typecheck-client",
-    "targeted ESLint",
-    "idempotent agent and Dev Container overlays"
+    "client TypeScript check",
+    "full packaged agent regression",
+    "Marsh theme, legacy theme migration, Accounts removal and composer widths",
+    "native diff/apply/undo, answer copy, timestamp persistence",
+    "base editor tabs, Git, terminals and VSIX installation"
   ]
 }

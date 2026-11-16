@@ -1,6 +1,6 @@
 {
 	"name": "phpcode",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"private": true,
 	"license": "MIT",
 	"packageManager": "pnpm@12.16.0",
@@ -10,7 +10,7 @@
 		"apply": "node scripts/phpcode.cjs apply",
 		"build": "node scripts/phpcode.cjs build",
 		"start": "node scripts/phpcode.cjs start",
-		"test": "node --test scripts/build.test.cjs database/env.test.cjs devcontainers/configuration.test.cjs",
+		"test": "node --test scripts/build.test.cjs database/env.test.cjs devcontainers/configuration.test.cjs && node scripts/test-agent.cjs",
 		"test:database": "node scripts/test-database.cjs",
 		"servers": "node scripts/phpcode.cjs servers",
 		"package": "node scripts/phpcode.cjs package",

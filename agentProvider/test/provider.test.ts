@@ -155,4 +155,42 @@ suite('phpcode native provider', () => {
 		assert.deepStrictEqual(signals.map(signal => signal.aborted), [true, false]);
 	});
 
+	test('routes Polza completions only to its fixed host with the supplied Polza key', async () => {
+		const observed: { url: string; authorization: string | null; redirect: RequestRedirect | undefined }[] = [];
+		const service = store.add(new PhpcodeProviderMainService(async (url, options) => {
+			observed.push({ url: String(url), authorization: new Headers(options?.headers).get('Authorization'), redirect: options?.redirect });
+			return new Response('data: [DONE]\n\n');
+		}));
+		const completed = collectStream(service, 'polza', store);
+		await service.start('polza', 'polza-test-key', '{}', 'polza'); await completed;
+		assert.deepStrictEqual(observed, [{ url: 'https://polza.ai/api/v1/chat/completions', authorization: 'Bearer polza-test-key', redirect: 'error' }]);
+	});
+
+	test('loads only Polza chat models from the public catalog without transmitting any key', async () => {
+		let observedUrl = ''; let authorization: string | null = null;
+		const service = store.add(new PhpcodeProviderMainService(async (url, options) => {
+			observedUrl = String(url); authorization = new Headers(options?.headers).get('Authorization');
+			return new Response(JSON.stringify({ data: [{ id: 'anthropic/claude-test', context_length: 200000 }] }));
+		}));
+		assert.deepStrictEqual(await service.models('must-not-leave-for-public-catalog', 'polza'), [{ id: 'anthropic/claude-test', contextWindow: 200000 }]);
+		assert.equal(observedUrl, 'https://polza.ai/api/v1/models?type=chat'); assert.equal(authorization, null);
+		assert.equal((await service.models('', 'polza')).length, 1);
+	});
+
+	test('rejects unknown provider identifiers at both native and IPC boundaries without fetching', async () => {
+		let calls = 0;
+		const service = store.add(new PhpcodeProviderMainService(async () => { calls++; return new Response(''); }));
+		for (const id of ['https://example.invalid', '__proto__', 'constructor', 'unknown']) {
+			const completed = collectStream(service, 'invalid-' + calls, store);
+			await service.start('invalid-' + calls, key, '{}', id as never);
+			assert.equal((await completed).at(-1)?.code, 'invalid_request');
+			await assert.rejects(service.models(key, id as never), { message: 'invalid_request' });
+		}
+		const disconnect = store.add(new Emitter<{ readonly ctx: string }>());
+		const channel = store.add(new PhpcodeProviderChannel(disconnect.event));
+		await assert.rejects(channel.call('window:1', 'start', ['id', key, '{}', 'https://example.invalid']), { message: 'invalid_request' });
+		await assert.rejects(channel.call('window:1', 'models', [key, '__proto__']), { message: 'invalid_request' });
+		assert.equal(calls, 0);
+	});
+
 });

@@ -5,6 +5,7 @@ const sources = path.join(__dirname, 'agentProvider');
 // This upstream version names sandboxed-renderer code electron-browser.
 for (const [input, output] of [
 	['common/provider.ts', 'common/provider.ts'],
+	['common/providerProfiles.ts', 'common/providerProfiles.ts'],
 	['electron-main/provider.ts', 'electron-main/provider.ts'],
 	['electron-sandbox/provider.ts', 'electron-browser/provider.ts'],
 	['test/provider.test.ts', 'test/electron-main/provider.test.ts']
@@ -32,4 +33,4 @@ function patch(file, before, after) {
 patch('src/vs/code/electron-main/app.ts', "import { app, BrowserWindow,", "import { PhpcodeProviderChannel } from '../../platform/phpcodeProvider/electron-main/provider.js';\nimport { PHPCODE_PROVIDER_CHANNEL } from '../../platform/phpcodeProvider/common/provider.js';\nimport { app, BrowserWindow,");
 patch('src/vs/code/electron-main/app.ts', '\t\tconst utilityProcessWorkerChannel = ProxyChannel.fromService(accessor.get(IUtilityProcessWorkerMainService), disposables);', '\t\tconst phpcodeProvider = disposables.add(new PhpcodeProviderChannel(mainProcessElectronServer.onDidRemoveConnection));\n\t\tmainProcessElectronServer.registerChannel(PHPCODE_PROVIDER_CHANNEL, phpcodeProvider);\n\n\t\tconst utilityProcessWorkerChannel = ProxyChannel.fromService(accessor.get(IUtilityProcessWorkerMainService), disposables);');
 patch('src/vs/workbench/workbench.desktop.main.ts', "import './services/request/electron-browser/requestService.js';", "import './services/request/electron-browser/requestService.js';\nimport '../platform/phpcodeProvider/electron-browser/provider.js';");
-console.log('Applied native phpcode BotHub streaming transport.');
+console.log('Applied native phpcode multi-provider streaming transport.');

@@ -36,7 +36,7 @@ exports.run = async () => {
 		assert.ok(installed, 'Local VSIX is installed');
 		assert.equal((await installed.activate()).installed, true);
 		const config = vscode.workspace.getConfiguration();
-		assert.deepStrictEqual({ theme: config.get('workbench.colorTheme'), icons: config.get('workbench.iconTheme'), tabs: config.get('workbench.editor.showTabs'), editorScroll: config.get('editor.smoothScrolling'), treeScroll: config.get('workbench.list.smoothScrolling') }, { theme: 'phpcode Dracula', icons: 'phpcode-icons', tabs: 'multiple', editorScroll: true, treeScroll: true });
+		assert.deepStrictEqual({ theme: config.get('workbench.colorTheme'), icons: config.get('workbench.iconTheme'), tabs: config.get('workbench.editor.showTabs'), editorScroll: config.get('editor.smoothScrolling'), treeScroll: config.get('workbench.list.smoothScrolling') }, { theme: 'phpcode Marsh', icons: 'phpcode-icons', tabs: 'multiple', editorScroll: true, treeScroll: true });
 		assert.equal(config.get('chat.disableAIFeatures'), true);
 		assert.equal(config.get('chat.copilotCliCommand.enabled'), false);
 		await vscode.commands.executeCommand('workbench.action.openRawDefaultSettings');
@@ -46,7 +46,7 @@ exports.run = async () => {
 		first.dispose(); second.dispose();
 		// The temporary fixture is saved to avoid a shutdown prompt in automated mode.
 		await a.save();
-		fs.writeFileSync(resultFile, JSON.stringify({ ok: true, checks: ['extension host API', 'two persistent file tabs', 'workspace edits', 'multiple terminals', 'Git activation', 'local VSIX installation and activation', 'search and settings commands', 'Dracula and scrolling defaults', 'excluded built-in provider absent', 'provider defaults disabled', 'default settings without vendor mentions'] }, null, 2));
+		fs.writeFileSync(resultFile, JSON.stringify({ ok: true, checks: ['extension host API', 'two persistent file tabs', 'workspace edits', 'multiple terminals', 'Git activation', 'local VSIX installation and activation', 'search and settings commands', 'Marsh and scrolling defaults', 'excluded built-in provider absent', 'provider defaults disabled', 'default settings without vendor mentions'] }, null, 2));
 	} catch (error) {
 		if (resultFile) { fs.writeFileSync(resultFile, JSON.stringify({ ok: false, message: error.stack || error.message }, null, 2)); }
 		throw error;

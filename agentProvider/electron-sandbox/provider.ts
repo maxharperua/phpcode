@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { PhpcodeProviderId } from '../common/providerProfiles.js';
 import { Event } from '../../../base/common/event.js';
 import { ProxyChannel } from '../../../base/parts/ipc/common/ipc.js';
 import { registerSingleton, InstantiationType } from '../../instantiation/common/extensions.js';
@@ -18,16 +19,16 @@ export class PhpcodeProviderService implements IPhpcodeProviderService {
 		this.proxy = ProxyChannel.toService<IPhpcodeProviderService>(mainProcessService.getChannel(PHPCODE_PROVIDER_CHANNEL));
 		this.onDidStream = this.proxy.onDidStream;
 	}
-	start(requestId: string, key: string, body: string): Promise<void> {
-		return this.proxy.start(requestId, key, body);
+	start(requestId: string, key: string, body: string, providerId: PhpcodeProviderId = 'bothub'): Promise<void> {
+		return this.proxy.start(requestId, key, body, providerId);
 	}
 
 	cancel(requestId: string): Promise<void> {
 		return this.proxy.cancel(requestId);
 	}
 
-	models(key: string): Promise<PhpcodeProviderModel[]> {
-		return this.proxy.models(key);
+	models(key: string, providerId: PhpcodeProviderId = 'bothub'): Promise<PhpcodeProviderModel[]> {
+		return this.proxy.models(key, providerId);
 	}
 }
 
