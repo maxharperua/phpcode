@@ -63,6 +63,8 @@ jobs:
         with:
           platforms: arm64
       - run: node scripts/phpcode.cjs bootstrap
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - run: corepack pnpm test
       - run: corepack pnpm test:database
       - name: Build both container servers from the same source
@@ -136,6 +138,8 @@ jobs:
           run-id: ${{ inputs.server_run_id || github.run_id }}
           github-token: ${{ github.token }}
       - run: node scripts/phpcode.cjs bootstrap
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - run: node scripts/phpcode.cjs build
       - run: node scripts/phpcode.cjs package
       - uses: actions/upload-artifact@v4
